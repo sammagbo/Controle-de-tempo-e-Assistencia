@@ -154,3 +154,14 @@ ALTER TABLE participants DISABLE ROW LEVEL SECURITY;
 
 -- Verificar resultado
 SELECT 'Schema atualizado com sucesso!' AS resultado;
+
+-- ============================================
+-- LIMPEZA DE DUPLICATAS (EXECUÇÃO OPCIONAL)
+-- ============================================
+-- Remove períodos duplicados que não possuem semanas vinculadas
+DO $$
+BEGIN
+  DELETE FROM periods 
+  WHERE name = 'Janeiro - Fevereiro 2026' 
+  AND id NOT IN (SELECT DISTINCT period_id FROM weeks);
+END $$;
