@@ -77,6 +77,7 @@ const AttendanceCounter: React.FC = () => {
     setSaving(true);
 
     const activeMeetingId = localStorage.getItem('active_meeting_id');
+    const activeTimer = localStorage.getItem('timer_start_timestamp');
 
     const { data, error } = await supabase
       .from('attendance')
@@ -106,11 +107,8 @@ const AttendanceCounter: React.FC = () => {
       setHistory([data as AttendanceRecord, ...history]);
       setLastSavedAt(data.created_at);
 
-      // If we are in an active meeting context, return to it
-      if (activeMeetingId) {
-        // Optional: Short delay or toast could go here, but immediate is usually better for flow.
-        // Alert to confirm save if desired, but user asked for "saving fails".
-        // Let's assume it works now.
+      // If we are in an active meeting context (by ID or active timer), return to live
+      if (activeMeetingId || activeTimer) {
         navigate('/live');
       } else {
         alert('Assistência salva com sucesso!');
