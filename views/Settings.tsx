@@ -139,12 +139,24 @@ const Settings: React.FC = () => {
                                           </div>
 
                                           <div className="flex gap-4 mb-4">
-                                                <span className={`px-3 py-1 rounded-full text-sm font-bold ${(localStorage.getItem('jw_lang') || 'pt') === 'pt' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
+                                                <button
+                                                      onClick={() => {
+                                                            localStorage.setItem('jw_lang', 'pt');
+                                                            window.location.reload();
+                                                      }}
+                                                      className={`px-4 py-2 rounded-full text-sm font-bold transition-all cursor-pointer ${(localStorage.getItem('jw_lang') || 'pt') === 'pt' ? 'bg-blue-100 text-blue-600 ring-2 ring-blue-300' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                                                >
                                                       🇧🇷 Português
-                                                </span>
-                                                <span className={`px-3 py-1 rounded-full text-sm font-bold ${localStorage.getItem('jw_lang') === 'fr' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500'}`}>
+                                                </button>
+                                                <button
+                                                      onClick={() => {
+                                                            localStorage.setItem('jw_lang', 'fr');
+                                                            window.location.reload();
+                                                      }}
+                                                      className={`px-4 py-2 rounded-full text-sm font-bold transition-all cursor-pointer ${localStorage.getItem('jw_lang') === 'fr' ? 'bg-indigo-100 text-indigo-600 ring-2 ring-indigo-300' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                                                >
                                                       🇫🇷 Français
-                                                </span>
+                                                </button>
                                           </div>
 
                                           <p className="text-sm text-amber-600 dark:text-amber-400 flex items-center gap-2">

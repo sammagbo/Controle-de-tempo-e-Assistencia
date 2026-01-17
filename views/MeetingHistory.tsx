@@ -7,7 +7,6 @@ import { MEETING_SECTIONS, SECTION_COLORS, SectionKey } from '../lib/meetingTemp
 interface MeetingHistoryItem {
       id: string;
       week_id: string;
-      date: string;
       total_duration_seconds: number;
       is_active: boolean;
       created_at: string;
@@ -49,7 +48,6 @@ const MeetingHistory: React.FC = () => {
                         .select(`
           id,
           week_id,
-          date,
           total_duration_seconds,
           is_active,
           created_at,
