@@ -312,6 +312,14 @@ const Dashboard: React.FC = () => {
                 <span className="absolute -top-1 -right-1 size-3 bg-orange-500 rounded-full animate-pulse"></span>
               )}
             </button>
+            {/* Settings Button */}
+            <button
+              onClick={() => navigate('/settings')}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[#f0f2f4] dark:hover:bg-[#2a3441] transition-colors text-gray-600 dark:text-gray-300"
+              title="Configurações e Backup"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>settings</span>
+            </button>
             {/* User Info & Logout */}
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-[#2a3441]">
               <div className="size-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm">

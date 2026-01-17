@@ -9,6 +9,7 @@ import AttendanceCounter from './views/AttendanceCounter';
 import MeetingReport from './views/MeetingReport';
 import DisplayMode from './views/DisplayMode';
 import Statistics from './views/Statistics';
+import Settings from './views/Settings';
 import Login from './views/Login';
 
 // Protected Route wrapper
@@ -42,6 +43,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/attendance" element={<ProtectedRoute><AttendanceCounter /></ProtectedRoute>} />
       <Route path="/report" element={<ProtectedRoute><MeetingReport /></ProtectedRoute>} />
       <Route path="/stats" element={<ProtectedRoute><Statistics /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
