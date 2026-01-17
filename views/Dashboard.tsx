@@ -140,14 +140,23 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  // Handle calendar sync from jw.org
+  // Check if sync is needed on mount
+  useEffect(() => {
+    async function checkCalendar() {
+      const currentLang = localStorage.getItem('jw_lang') || 'pt';
+      const shouldSync = await needsSync(currentLang);
+      setSyncNeeded(shouldSync);
+    }
+    checkCalendar();
+  }, []);
+
   const handleSync = async () => {
     setSyncing(true);
     try {
-      const result = await syncCalendarFromJwOrg();
+      const currentLang = localStorage.getItem('jw_lang') || 'pt';
+      const result = await syncCalendarFromJwOrg(currentLang);
       if (result.success) {
         alert(result.message);
-        // Reload periods after sync
         window.location.reload();
       } else {
         alert(result.message);
@@ -159,15 +168,6 @@ const Dashboard: React.FC = () => {
       setSyncing(false);
     }
   };
-
-  // Check if sync is needed on mount
-  useEffect(() => {
-    const checkSync = async () => {
-      const needed = await needsSync();
-      setSyncNeeded(needed);
-    };
-    checkSync();
-  }, []);
 
   // Fetch periods on mount (only periods that have weeks)
   useEffect(() => {

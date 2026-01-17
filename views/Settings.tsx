@@ -119,6 +119,53 @@ const Settings: React.FC = () => {
 
                   <main className="p-6 max-w-4xl mx-auto space-y-8">
 
+                        {/* Data Sync Section */}
+                        <div className="bg-white dark:bg-[#1e293b] p-8 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                              <div className="flex items-start gap-6">
+                                    <div className="p-4 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl">
+                                          <span className="material-symbols-outlined text-4xl">sync</span>
+                                    </div>
+                                    <div className="flex-1">
+                                          <h2 className="text-xl font-bold mb-2">Fonte de Dados (JW.ORG)</h2>
+                                          <p className="text-gray-600 dark:text-gray-300 mb-6">
+                                                Escolha o idioma para baixar a programação das reuniões.
+                                          </p>
+
+                                          <div className="flex gap-4 mb-6">
+                                                <button
+                                                      onClick={() => {
+                                                            localStorage.setItem('jw_lang', 'pt');
+                                                            window.location.reload(); // Simple reload to apply
+                                                      }}
+                                                      className={`px-4 py-2 rounded-lg font-bold transition-all ${(localStorage.getItem('jw_lang') || 'pt') === 'pt'
+                                                                  ? 'bg-blue-600 text-white ring-2 ring-blue-300'
+                                                                  : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
+                                                            }`}
+                                                >
+                                                      Português (Brasil)
+                                                </button>
+                                                <button
+                                                      onClick={() => {
+                                                            localStorage.setItem('jw_lang', 'fr');
+                                                            window.location.reload();
+                                                      }}
+                                                      className={`px-4 py-2 rounded-lg font-bold transition-all ${localStorage.getItem('jw_lang') === 'fr'
+                                                                  ? 'bg-indigo-600 text-white ring-2 ring-indigo-300'
+                                                                  : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
+                                                            }`}
+                                                >
+                                                      Français
+                                                </button>
+                                          </div>
+
+                                          <p className="text-sm text-gray-500 italic">
+                                                Nota: Ao trocar o idioma, as próximas sincronizações buscarão os dados do site no idioma selecionado.
+                                          </p>
+                                    </div>
+                              </div>
+                        </div>
+
+                        {/* Backup Section */}
                         <div className="bg-white dark:bg-[#1e293b] p-8 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                               <div className="flex items-start gap-6">
                                     <div className="p-4 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-2xl">

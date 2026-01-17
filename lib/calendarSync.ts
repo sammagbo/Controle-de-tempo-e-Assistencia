@@ -1,32 +1,60 @@
 /**
  * Serviço de Sincronização Automática do Calendário
- * Busca dados da Apostila da Reunião diretamente do jw.org
+ * Busca dados da Apostila da Reunião diretamente do jw.org (PT ou FR)
  * e importa para o banco de dados Supabase.
  */
 
 import { supabase } from './supabaseClient';
 
-// URLs base do jw.org
-const JW_BASE_URL = 'https://www.jw.org/pt/biblioteca/jw-apostila-do-mes';
+// Configurações por idioma
+interface LanguageConfig {
+      baseUrl: string;
+      monthSlugs: Record<string, string>;
+      periodRegex: RegExp;
+      weekLinkRegex: RegExp;
+      monthsMap: Record<string, number>;
+}
 
-// Mapear meses para slugs do jw.org
-const MONTH_SLUGS: Record<string, string> = {
-      'janeiro-fevereiro': 'janeiro-fevereiro',
-      'março-abril': 'marco-abril',
-      'maio-junho': 'maio-junho',
-      'julho-agosto': 'julho-agosto',
-      'setembro-outubro': 'setembro-outubro',
-      'novembro-dezembro': 'novembro-dezembro'
+const CALENDAR_CONFIG: Record<string, LanguageConfig> = {
+      pt: {
+            baseUrl: 'https://www.jw.org/pt/biblioteca/jw-apostila-do-mes',
+            monthSlugs: {
+                  'janeiro-fevereiro': 'janeiro-fevereiro',
+                  'março-abril': 'marco-abril',
+                  'maio-junho': 'maio-junho',
+                  'julho-agosto': 'julho-agosto',
+                  'setembro-outubro': 'setembro-outubro',
+                  'novembro-dezembro': 'novembro-dezembro'
+            },
+            periodRegex: /href="[^"]*\/jw-apostila-do-mes\/([a-z-]+-\d{4}-mwb)\/?"/gi,
+            weekLinkRegex: /href="([^"]*Programa[^"]*)"[^>]*>[\s\S]*?(\d+(?:-\d+)?\s+de\s+\w+(?:\s*[–-]\s*\d+\s+de\s+\w+)?)/gi,
+            monthsMap: {
+                  'janeiro': 0, 'fevereiro': 1, 'março': 2, 'abril': 3,
+                  'maio': 4, 'junho': 5, 'julho': 6, 'agosto': 7,
+                  'setembro': 8, 'outubro': 9, 'novembro': 10, 'dezembro': 11
+            }
+      },
+      fr: {
+            baseUrl: 'https://www.jw.org/fr/bibliotheque/cahier-vie-et-ministere',
+            monthSlugs: {
+                  'janvier-fevrier': 'janvier-fevrier',
+                  'mars-avril': 'mars-avril',
+                  'mai-juin': 'mai-juin',
+                  'juillet-aout': 'juillet-aout',
+                  'septembre-octobre': 'septembre-octobre',
+                  'novembre-decembre': 'novembre-decembre'
+            },
+            // Regex ajustado para URL francesa (supondo padrão similar)
+            periodRegex: /href="[^"]*\/cahier-vie-et-ministere\/([a-z-]+-\d{4}-mwb)\/?"/gi,
+            // Regex para semana em francês (ex: "6-12 janvier")
+            weekLinkRegex: /href="([^"]*Programme[^"]*)"[^>]*>[\s\S]*?(\d+(?:-\d+)?\s+(?:janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)(?:\s*[–-]\s*\d+\s+(?:janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre))?)/gi,
+            monthsMap: {
+                  'janvier': 0, 'février': 1, 'mars': 2, 'avril': 3,
+                  'mai': 4, 'juin': 5, 'juillet': 6, 'août': 7,
+                  'septembre': 8, 'octobre': 9, 'novembre': 10, 'décembre': 11
+            }
+      }
 };
-
-const PERIOD_ORDER = [
-      'janeiro-fevereiro',
-      'março-abril',
-      'maio-junho',
-      'julho-agosto',
-      'setembro-outubro',
-      'novembro-dezembro'
-];
 
 interface WeekData {
       dateRange: string;
@@ -34,29 +62,22 @@ interface WeekData {
       url: string;
 }
 
-interface PeriodData {
-      name: string;
-      slug: string;
-      year: number;
-      weeks: WeekData[];
-}
-
 /**
  * Busca os períodos disponíveis no jw.org
  */
-async function fetchAvailablePeriods(): Promise<string[]> {
+async function fetchAvailablePeriods(lang: string = 'pt'): Promise<string[]> {
+      const config = CALENDAR_CONFIG[lang] || CALENDAR_CONFIG.pt;
       try {
-            const response = await fetch(`${JW_BASE_URL}/`);
+            const response = await fetch(`${config.baseUrl}/`);
             const html = await response.text();
 
-            // Extrair links de períodos (ex: maio-junho-2026-mwb)
-            const periodRegex = /href="[^"]*\/jw-apostila-do-mes\/([a-z-]+-\d{4}-mwb)\/?"/gi;
-            const matches = [...html.matchAll(periodRegex)];
+            // Extrair links de períodos
+            const matches = [...html.matchAll(config.periodRegex)];
             const periods = [...new Set(matches.map(m => m[1]))];
 
             return periods;
       } catch (error) {
-            console.error('Erro ao buscar períodos:', error);
+            console.error(`Erro ao buscar períodos (${lang}):`, error);
             return [];
       }
 }
@@ -95,7 +116,8 @@ async function getExistingPeriods(): Promise<string[]> {
 /**
  * Calcula quantos meses à frente temos cadastrados
  */
-function monthsAhead(periods: string[]): number {
+function monthsAhead(periods: string[], lang: string = 'pt'): number {
+      const config = CALENDAR_CONFIG[lang] || CALENDAR_CONFIG.pt;
       const now = new Date();
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
@@ -103,20 +125,31 @@ function monthsAhead(periods: string[]): number {
       let maxMonthsAhead = 0;
 
       for (const period of periods) {
-            // Ex: "Maio - Junho 2026"
-            const match = period.match(/(\w+)\s*-\s*(\w+)\s+(\d{4})/i);
+            // Tenta extrair mês e ano. Ex: "Maio - Junho 2026"
+            const match = period.match(/(\w+)(?:.*?)\s+(\d{4})/i);
             if (!match) continue;
 
-            const monthMap: Record<string, number> = {
-                  'janeiro': 0, 'fevereiro': 1, 'março': 2, 'abril': 3,
-                  'maio': 4, 'junho': 5, 'julho': 6, 'agosto': 7,
-                  'setembro': 8, 'outubro': 9, 'novembro': 10, 'dezembro': 11
-            };
+            // match[1] é o nome do primeiro mês (ex: "Maio")
+            const monthName = match[1].toLowerCase();
+            // match[2] é o ano
+            const year = parseInt(match[2]);
 
-            const endMonth = monthMap[match[2].toLowerCase()];
-            const year = parseInt(match[3]);
+            // Precisamos encontrar o mês final para calcular "à frente"
+            // Mas simplificando, pegamos o primeiro mês + 1 (já que são bimestrais)
 
-            if (endMonth !== undefined) {
+            // Tentar mapear o nome do mês
+            let endMonth = -1;
+
+            // Verifica mapa exato
+            if (config.monthsMap[monthName] !== undefined) {
+                  endMonth = config.monthsMap[monthName] + 1; // Fim do bimestre
+            } else {
+                  // Fallback: tenta buscar parcial ou em outros idiomas se misturou
+                  // Mas assumimos que o nome do período salvo no banco reflete o slug processado
+                  continue;
+            }
+
+            if (endMonth !== -1) {
                   const monthsDiff = (year - currentYear) * 12 + (endMonth - currentMonth);
                   maxMonthsAhead = Math.max(maxMonthsAhead, monthsDiff);
             }
@@ -187,27 +220,23 @@ async function createWeeks(periodId: string, weeks: WeekData[]): Promise<void> {
 /**
  * Buscar semanas de um período no jw.org
  */
-async function fetchWeeksFromJwOrg(periodSlug: string): Promise<WeekData[]> {
+async function fetchWeeksFromJwOrg(periodSlug: string, lang: string = 'pt'): Promise<WeekData[]> {
+      const config = CALENDAR_CONFIG[lang] || CALENDAR_CONFIG.pt;
       try {
-            const url = `${JW_BASE_URL}/${periodSlug}/`;
+            const url = `${config.baseUrl}/${periodSlug}/`;
             const response = await fetch(url);
             const html = await response.text();
 
             const weeks: WeekData[] = [];
-
-            // Regex para encontrar links de semanas
-            // Ex: "2-8 de março" ou "27 de abril–3 de maio"
-            const weekLinkRegex = /href="([^"]*Programa[^"]*)"[^>]*>[\s\S]*?(\d+(?:-\d+)?\s+de\s+\w+(?:\s*[–-]\s*\d+\s+de\s+\w+)?)/gi;
-            const matches = [...html.matchAll(weekLinkRegex)];
+            const matches = [...html.matchAll(config.weekLinkRegex)];
 
             for (const match of matches) {
                   const weekUrl = match[1];
                   const dateRange = match[2].replace(/–/g, '-').trim();
 
-                  // Tema pode ser extraído da página da semana (simplificado aqui)
                   weeks.push({
                         dateRange,
-                        theme: `Leitura da semana de ${dateRange}`,
+                        theme: `Leitura da semana de ${dateRange}`, // Fallback generico
                         url: weekUrl
                   });
             }
@@ -221,9 +250,8 @@ async function fetchWeeksFromJwOrg(periodSlug: string): Promise<WeekData[]> {
 
 /**
  * Sincronizar calendário com jw.org
- * Retorna quantos períodos novos foram criados
  */
-export async function syncCalendarFromJwOrg(): Promise<{
+export async function syncCalendarFromJwOrg(lang: string = 'pt'): Promise<{
       success: boolean;
       periodsCreated: number;
       weeksCreated: number;
@@ -235,14 +263,14 @@ export async function syncCalendarFromJwOrg(): Promise<{
             const existingPeriods = await getExistingPeriods();
 
             // 2. Buscar períodos disponíveis no jw.org
-            const availableSlugs = await fetchAvailablePeriods();
+            const availableSlugs = await fetchAvailablePeriods(lang);
 
             let periodsCreated = 0;
             let weeksCreated = 0;
 
             // 3. Para cada período disponível, verificar se precisa importar
             for (const slug of availableSlugs) {
-                  const periodName = slugToPeriodName(slug);
+                  const periodName = slugToPeriodName(slug); // Ex: "Maio - Junho 2026"
 
                   if (!existingPeriods.includes(periodName)) {
                         // Criar período
@@ -252,7 +280,7 @@ export async function syncCalendarFromJwOrg(): Promise<{
                               periodsCreated++;
 
                               // Buscar e criar semanas
-                              const weeks = await fetchWeeksFromJwOrg(slug);
+                              const weeks = await fetchWeeksFromJwOrg(slug, lang);
                               await createWeeks(periodId, weeks);
                               weeksCreated += weeks.length;
                         }
@@ -261,7 +289,7 @@ export async function syncCalendarFromJwOrg(): Promise<{
 
             // 4. Recalcular meses à frente
             const updatedPeriods = await getExistingPeriods();
-            const ahead = monthsAhead(updatedPeriods);
+            const ahead = monthsAhead(updatedPeriods, lang);
 
             return {
                   success: true,
@@ -269,7 +297,7 @@ export async function syncCalendarFromJwOrg(): Promise<{
                   weeksCreated,
                   monthsAhead: ahead,
                   message: periodsCreated > 0
-                        ? `Sincronizado! ${periodsCreated} período(s) e ${weeksCreated} semana(s) criados.`
+                        ? `Sincronizado (${lang.toUpperCase()})! ${periodsCreated} período(s) e ${weeksCreated} semana(s) criados.`
                         : `Calendário já está atualizado. ${ahead} meses à frente.`
             };
       } catch (error) {
@@ -287,8 +315,8 @@ export async function syncCalendarFromJwOrg(): Promise<{
 /**
  * Verificar se precisa sincronizar (menos de 2 meses à frente)
  */
-export async function needsSync(): Promise<boolean> {
+export async function needsSync(lang: string = 'pt'): Promise<boolean> {
       const existingPeriods = await getExistingPeriods();
-      const ahead = monthsAhead(existingPeriods);
+      const ahead = monthsAhead(existingPeriods, lang);
       return ahead < 2;
 }
