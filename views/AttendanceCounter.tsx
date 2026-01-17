@@ -84,9 +84,10 @@ const AttendanceCounter: React.FC = () => {
       .insert({
         meeting_id: activeMeetingId || null,
         presencial,
-        zoom
+        zoom,
+        count: presencial + zoom  // Include total count for compatibility
       })
-      .select('id, presencial, zoom, created_at')
+      .select('id, presencial, zoom, count, created_at')
       .single();
 
     if (error) {

@@ -4,6 +4,7 @@ import { CURRENT_USER } from '../types';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../lib/AuthContext';
 import { syncCalendarFromJwOrg, needsSync } from '../lib/calendarSync';
+import { t } from '../lib/translations';
 
 interface Period {
   id: string;
@@ -278,10 +279,10 @@ const Dashboard: React.FC = () => {
             <button
               onClick={() => navigate('/attendance')}
               className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors text-green-700 dark:text-green-400"
-              title="Contar Assistência"
+              title={t('attendance')}
             >
               <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>groups</span>
-              <span className="text-sm font-bold hidden md:block">Assistência</span>
+              <span className="text-sm font-bold hidden md:block">{t('attendance')}</span>
             </button>
             {/* Statistics Link */}
             <button
@@ -316,10 +317,10 @@ const Dashboard: React.FC = () => {
             <button
               onClick={() => navigate('/history')}
               className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[#f0f2f4] dark:hover:bg-[#2a3441] transition-colors text-gray-600 dark:text-gray-300"
-              title="Histórico de Reuniões"
+              title={t('meetingHistory')}
             >
               <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>history</span>
-              <span className="text-sm font-medium hidden md:block">Histórico</span>
+              <span className="text-sm font-medium hidden md:block">{t('meetingHistory')}</span>
             </button>
             {/* Settings Button */}
             <button
