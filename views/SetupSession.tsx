@@ -420,7 +420,7 @@ const SetupSession: React.FC = () => {
               className="w-full bg-white dark:bg-surface-dark border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 pl-10 text-[#111318] dark:text-white placeholder-gray-400 focus:border-primary focus:ring-1 focus:ring-primary transition-all"
             />
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-              person_celebrate
+              mic
             </span>
           </div>
         </div>
