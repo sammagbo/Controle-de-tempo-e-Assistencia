@@ -109,9 +109,20 @@ const Login: React.FC = () => {
                         </div>
 
                         {/* Footer */}
-                        <p className="text-center text-blue-200 text-sm mt-6">
-                              © 2026 MeetingManager. Todos os direitos reservados.
-                        </p>
+                        <div className="text-center text-blue-200 text-sm mt-6">
+                              <p>© 2026 Sam Magbo. All Rights Reserved.</p>
+                              <p className="mt-1">
+                                    Developed with <span className="text-red-400">♥</span> by{' '}
+                                    <a
+                                          href="https://magbostudio.com"
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-white hover:underline font-medium"
+                                    >
+                                          Magbo Studio
+                                    </a>
+                              </p>
+                        </div>
                   </div>
             </div>
       );
