@@ -35,7 +35,8 @@ const CALENDAR_CONFIG: Record<string, LanguageConfig> = {
             }
       },
       fr: {
-            baseUrl: 'https://www.jw.org/fr/bibliotheque/cahier-vie-et-ministere',
+            // Note: The URL must be encoded (bibliothèque -> biblioth%C3%A8que)
+            baseUrl: 'https://www.jw.org/fr/biblioth%C3%A8que/reunion-tj-cahier',
             monthSlugs: {
                   'janvier-fevrier': 'janvier-fevrier',
                   'mars-avril': 'mars-avril',
@@ -44,10 +45,14 @@ const CALENDAR_CONFIG: Record<string, LanguageConfig> = {
                   'septembre-octobre': 'septembre-octobre',
                   'novembre-decembre': 'novembre-decembre'
             },
-            // Regex ajustado para URL francesa (supondo padrão similar)
-            periodRegex: /href="[^"]*\/cahier-vie-et-ministere\/([a-z-]+-\d{4}-mwb)\/?"/gi,
-            // Regex para semana em francês (ex: "6-12 janvier")
-            weekLinkRegex: /href="([^"]*Programme[^"]*)"[^>]*>[\s\S]*?(\d+(?:-\d+)?\s+(?:janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)(?:\s*[–-]\s*\d+\s+(?:janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre))?)/gi,
+            // Regex for French issues: href="/fr/biblioth%C3%A8que/reunion-tj-cahier/mwb-janvier-fevrier-2026/"
+            // Pattern: mwb-[months]-[year]
+            periodRegex: /href="[^"]*\/reunion-tj-cahier\/(mwb-[a-z-]+-\d{4})\/?"/gi,
+            // Regex for French week links:
+            // href="/fr/bibliothèque/reunion-tj-cahier/mwb-janvier-fevrier-2026/Programme-pour-la-réunion-Vie-et-ministère-du-6-au-12-janvier-2026/"
+            // Note: The href might be relative or full. We look for the "Programme..." part.
+            // Also matching the date text content.
+            weekLinkRegex: /href="([^"]*Programme-pour-la-r(?:é|%C3%A9)union[^"]*)"[^>]*>[\s\S]*?(\d+(?:-\d+)?\s+(?:janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)(?:\s*[–-]\s*\d+\s+(?:janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre))?)/gi,
             monthsMap: {
                   'janvier': 0, 'février': 1, 'mars': 2, 'avril': 3,
                   'mai': 4, 'juin': 5, 'juillet': 6, 'août': 7,
@@ -75,6 +80,8 @@ async function fetchAvailablePeriods(lang: string = 'pt'): Promise<string[]> {
             const matches = [...html.matchAll(config.periodRegex)];
             const periods = [...new Set(matches.map(m => m[1]))];
 
+            console.log(`[${lang}] Found periods:`, periods);
+
             return periods;
       } catch (error) {
             console.error(`Erro ao buscar períodos (${lang}):`, error);
@@ -85,9 +92,13 @@ async function fetchAvailablePeriods(lang: string = 'pt'): Promise<string[]> {
 /**
  * Converte slug do período para nome amigável
  * Ex: "maio-junho-2026-mwb" -> "Maio - Junho 2026"
+ * Ex: "mwb-janvier-fevrier-2026" -> "Janvier - Fevrier 2026"
  */
 function slugToPeriodName(slug: string): string {
-      const parts = slug.replace('-mwb', '').split('-');
+      // Remove known affixes (suffix -mwb or prefix mwb-)
+      const cleanSlug = slug.replace(/-mwb$/, '').replace(/^mwb-/, '');
+
+      const parts = cleanSlug.split('-');
       const year = parts.pop();
       const months = parts.join('-')
             .split('-')
