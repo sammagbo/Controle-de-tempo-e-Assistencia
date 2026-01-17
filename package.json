@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sync:pt": "node scripts/sync-jw.mjs pt",
+    "sync:fr": "node scripts/sync-jw.mjs fr"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.90.1",
@@ -24,6 +26,7 @@
   "devDependencies": {
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "dotenv": "^17.2.3",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }
