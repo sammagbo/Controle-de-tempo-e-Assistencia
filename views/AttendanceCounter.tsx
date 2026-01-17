@@ -172,11 +172,11 @@ const AttendanceCounter: React.FC = () => {
         {/* Presencial Counter - Always Visible */}
         <div
           onClick={() => setPresencial(prev => prev + 1)}
-          className="cursor-pointer active:scale-95 transition-transform text-center mb-6 select-none"
+          className="cursor-pointer active:scale-95 transition-transform text-center mb-6 select-none bg-gradient-to-br from-blue-500 to-blue-700 rounded-3xl p-8 shadow-2xl shadow-blue-500/30"
         >
-          <p className="text-gray-500 text-sm uppercase tracking-widest font-bold mb-2">Presencial</p>
-          <span className="text-[140px] sm:text-[180px] font-black leading-none text-blue-500">{presencial}</span>
-          <p className="text-blue-400 text-sm mt-2">Toque para +1</p>
+          <p className="text-white/80 text-lg uppercase tracking-widest font-bold mb-4">👥 Presencial</p>
+          <span className="text-[120px] sm:text-[180px] font-black leading-none text-white drop-shadow-lg">{presencial}</span>
+          <p className="text-white/70 text-base mt-4 font-medium">Toque para +1</p>
         </div>
 
         {/* -1 Button for Presencial */}
