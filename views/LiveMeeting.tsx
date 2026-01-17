@@ -20,13 +20,27 @@ const LiveMeeting: React.FC = () => {
   const navigate = useNavigate();
   const [items, setItems] = useState<LiveAgendaItem[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
+
+  // Initialize isRunning from localStorage to persist across navigation
+  const [isRunning, setIsRunning] = useState(() => {
+    const storedStartTime = localStorage.getItem('timer_start_timestamp');
+    return !!storedStartTime;
+  });
+
   const [loading, setLoading] = useState(true);
   const [meetingId, setMeetingId] = useState<string | null>(null);
   const [finalizing, setFinalizing] = useState(false);
 
-  // Timer state
-  const [totalSeconds, setTotalSeconds] = useState(0);
+  // Timer state - initialize from localStorage
+  const [totalSeconds, setTotalSeconds] = useState(() => {
+    const storedStartTime = parseInt(localStorage.getItem('timer_start_timestamp') || '0');
+    const storedBaseSeconds = parseInt(localStorage.getItem('timer_base_seconds') || '0');
+    if (storedStartTime) {
+      const elapsed = Math.floor((Date.now() - storedStartTime) / 1000);
+      return storedBaseSeconds + elapsed;
+    }
+    return 0;
+  });
   const timerRef = useRef<number>(0);
 
   // Name Editing State
