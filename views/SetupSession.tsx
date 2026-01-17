@@ -33,7 +33,31 @@ const SetupSession: React.FC = () => {
     if (storedMeetingId) {
       setMeetingId(storedMeetingId);
     }
+
+    // Auto-fill Congregation for songs if empty
+    setItems(currentItems =>
+      currentItems.map(item => {
+        if ((item.title.startsWith('Cântico') || item.title.includes('Cântico')) && !item.assignedNames) {
+          return { ...item, assignedNames: 'Congregação' };
+        }
+        return item;
+      })
+    );
   }, []);
+
+  // Update Initial/Final Comments when President Name changes
+  useEffect(() => {
+    if (!presidentName) return;
+
+    setItems(currentItems =>
+      currentItems.map(item => {
+        if ((item.title === 'Comentários Iniciais' || item.title === 'Comentários Finais') && !item.assignedNames) {
+          return { ...item, assignedNames: presidentName };
+        }
+        return item;
+      })
+    );
+  }, [presidentName]);
 
   const totalDuration = getTotalEstimatedMinutes(items);
 

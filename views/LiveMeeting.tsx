@@ -29,6 +29,40 @@ const LiveMeeting: React.FC = () => {
   const [totalSeconds, setTotalSeconds] = useState(0);
   const timerRef = useRef<number>(0);
 
+  // Name Editing State
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editingNameValue, setEditingNameValue] = useState('');
+
+  const startEditingName = () => {
+    if (items[activeIndex]) {
+      setEditingNameValue(items[activeIndex].assigned_names || '');
+      setIsEditingName(true);
+    }
+  };
+
+  const saveEditedName = async () => {
+    const activeItem = items[activeIndex];
+    if (activeItem) {
+      const { error } = await supabase
+        .from('agenda_items')
+        .update({ assigned_names: editingNameValue })
+        .eq('id', activeItem.id);
+
+      if (error) {
+        console.error('Error updating name:', error);
+        alert('Erro ao salvar nome.');
+      } else {
+        // Update local state
+        const newItems = [...items];
+        if (items[activeIndex]) {
+          newItems[activeIndex].assigned_names = editingNameValue;
+          setItems(newItems);
+        }
+        setIsEditingName(false);
+      }
+    }
+  };
+
   // Fetch agenda items on mount
   useEffect(() => {
     const storedMeetingId = localStorage.getItem('active_meeting_id');
@@ -418,12 +452,50 @@ const LiveMeeting: React.FC = () => {
               <h1 className="text-[#111318] dark:text-white tracking-tight text-3xl md:text-5xl font-bold leading-tight">
                 {activeItem?.title || 'Nenhuma parte'}
               </h1>
-              {activeItem?.assigned_names && (
-                <p className="text-primary dark:text-blue-400 text-lg font-medium mt-2">
-                  <span className="material-symbols-outlined align-middle text-lg mr-1">person</span>
-                  {activeItem.assigned_names}
-                </p>
-              )}
+
+              {/* Name Display / Editing */}
+              <div className="min-h-[40px] flex items-center justify-center">
+                {isEditingName ? (
+                  <div className="flex items-center gap-2 animate-fade-in">
+                    <input
+                      type="text"
+                      value={editingNameValue}
+                      onChange={(e) => setEditingNameValue(e.target.value)}
+                      className="border border-primary rounded-lg px-3 py-1 text-lg text-center dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 w-64"
+                      placeholder="Nome do irmão"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') saveEditedName();
+                        if (e.key === 'Escape') setIsEditingName(false);
+                      }}
+                    />
+                    <button
+                      onClick={saveEditedName}
+                      className="p-1.5 bg-green-100 text-green-700 rounded-full hover:bg-green-200"
+                    >
+                      <span className="material-symbols-outlined text-xl">check</span>
+                    </button>
+                    <button
+                      onClick={() => setIsEditingName(false)}
+                      className="p-1.5 bg-red-100 text-red-700 rounded-full hover:bg-red-200"
+                    >
+                      <span className="material-symbols-outlined text-xl">close</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    onClick={startEditingName}
+                    className="group flex items-center justify-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                    title="Clique para editar o nome"
+                  >
+                    <p className="text-primary dark:text-blue-400 text-lg font-medium">
+                      <span className="material-symbols-outlined align-middle text-lg mr-1">person</span>
+                      {activeItem?.assigned_names || <span className="italic opacity-50">Sem designação</span>}
+                    </p>
+                    <span className="material-symbols-outlined text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity text-sm">edit</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Mega Timer - Minutes and Seconds ONLY */}
