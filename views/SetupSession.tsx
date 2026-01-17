@@ -10,11 +10,148 @@ import {
   getTotalEstimatedMinutes
 } from '../lib/meetingTemplate';
 import { parseMeetingPDF } from '../lib/pdfParser';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface SetupItem extends MeetingPart {
   customTitle?: string;
   assignedNames?: string;
 }
+
+// Sortable Item Component
+interface SortableItemProps {
+  item: SetupItem;
+  index: number;
+  onTitleChange: (id: string, title: string) => void;
+  onNamesChange: (id: string, names: string) => void;
+  onDurationChange: (id: string, duration: number) => void;
+  onToggleAllowsComments: (id: string) => void;
+  onToggleRequiresPostComment: (id: string) => void;
+  onDelete: (id: string) => void;
+}
+
+const SortableItem: React.FC<SortableItemProps> = ({
+  item,
+  index,
+  onTitleChange,
+  onNamesChange,
+  onDurationChange,
+  onToggleAllowsComments,
+  onToggleRequiresPostComment,
+  onDelete,
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group bg-white dark:bg-surface-dark"
+    >
+      {/* Drag Handle */}
+      <button
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+        title="Arrastar para reorganizar"
+      >
+        <span className="material-symbols-outlined text-lg">drag_indicator</span>
+      </button>
+
+      {/* Position */}
+      <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+        <span className="text-xs font-bold text-gray-500 dark:text-gray-400">
+          {index + 1}
+        </span>
+      </div>
+
+      {/* Title & Names */}
+      <div className="flex-1 min-w-0">
+        <input
+          type="text"
+          className="w-full bg-transparent border-none p-0 text-[#111318] dark:text-white text-sm font-medium focus:ring-0 placeholder-gray-400"
+          placeholder="Digite o título..."
+          value={item.title}
+          onChange={(e) => onTitleChange(item.id, e.target.value)}
+        />
+        <input
+          type="text"
+          className="w-full bg-transparent border-none p-0 text-primary text-xs focus:ring-0 placeholder-gray-300 mt-1"
+          placeholder="Designado(s): ex. Fulano / Ciclano"
+          value={item.assignedNames || ''}
+          onChange={(e) => onNamesChange(item.id, e.target.value)}
+        />
+      </div>
+
+      {/* Duration */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <span className="material-symbols-outlined text-gray-400 text-lg">schedule</span>
+        <input
+          type="number"
+          className="w-14 bg-transparent border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-center text-sm focus:border-primary focus:ring-1 focus:ring-primary"
+          value={item.estimatedMinutes}
+          onChange={(e) => onDurationChange(item.id, parseInt(e.target.value) || 0)}
+        />
+        <span className="text-xs text-gray-500">min</span>
+      </div>
+
+      {/* Comment Indicators */}
+      <div className="flex items-center gap-1 flex-shrink-0">
+        <button
+          onClick={() => onToggleAllowsComments(item.id)}
+          className={`size-8 flex items-center justify-center rounded-full transition-colors ${item.allowsComments ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 'text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+          title={item.allowsComments ? "Desativar comentários" : "Ativar comentários"}
+        >
+          <span className="material-symbols-outlined text-lg">chat_bubble</span>
+        </button>
+
+        <button
+          onClick={() => onToggleRequiresPostComment(item.id)}
+          className={`size-8 flex items-center justify-center rounded-full transition-colors ${item.requiresPostComment ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' : 'text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+          title={item.requiresPostComment ? "Desativar instrutor" : "Ativar instrutor"}
+        >
+          <span className="material-symbols-outlined text-lg">record_voice_over</span>
+        </button>
+
+        <button
+          onClick={() => onDelete(item.id)}
+          className="size-8 flex items-center justify-center rounded-full text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
+          title="Remover parte"
+        >
+          <span className="material-symbols-outlined text-lg">delete</span>
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const SetupSession: React.FC = () => {
   const navigate = useNavigate();
@@ -27,6 +164,18 @@ const SetupSession: React.FC = () => {
   const [selectedDay, setSelectedDay] = useState('Tuesday');
   const [presidentName, setPresidentName] = useState('');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // DnD Sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     const storedMeetingId = localStorage.getItem('active_meeting_id');
@@ -289,6 +438,38 @@ const SetupSession: React.FC = () => {
     setItems(prev => prev.filter(item => item.id !== id));
   };
 
+  // Handle drag end for reordering within sections
+  const handleDragEnd = (event: DragEndEvent, sectionKey: SectionKey) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setItems(prev => {
+        const sectionItems = prev.filter(i => i.section === sectionKey);
+        const otherItems = prev.filter(i => i.section !== sectionKey);
+
+        const oldIndex = sectionItems.findIndex(i => i.id === active.id);
+        const newIndex = sectionItems.findIndex(i => i.id === over.id);
+
+        const reorderedSection = arrayMove(sectionItems, oldIndex, newIndex);
+
+        // Rebuild items maintaining section order
+        const sectionOrder: SectionKey[] = ['abertura', 'tesouros', 'ministerio', 'vida_crista', 'encerramento'];
+        const allItems = [...otherItems, ...reorderedSection];
+
+        return allItems.sort((a, b) => {
+          const sectionCompare = sectionOrder.indexOf(a.section) - sectionOrder.indexOf(b.section);
+          if (sectionCompare !== 0) return sectionCompare;
+
+          // Within same section, maintain new order
+          if (a.section === sectionKey) {
+            return reorderedSection.findIndex((i: SetupItem) => i.id === a.id) - reorderedSection.findIndex((i: SetupItem) => i.id === b.id);
+          }
+          return 0;
+        });
+      });
+    }
+  };
+
   const handleBeginMeeting = async () => {
     if (!meetingId) {
       alert('Nenhuma reunião ativa. Por favor, inicie uma reunião pelo Painel.');
@@ -446,151 +627,110 @@ const SetupSession: React.FC = () => {
                   <span className={`text-sm font-medium ${colors.text}`}>{sectionDuration} min</span>
                 </div>
 
-                {/* Parts List */}
-                <div className="bg-white dark:bg-surface-dark divide-y divide-gray-100 dark:divide-gray-800">
-                  {/* Insert at beginning button for ministerio and vida_crista */}
-                  {(sectionKey === 'ministerio' || sectionKey === 'vida_crista') && (
-                    <div className="flex justify-center py-1 bg-gray-50 dark:bg-gray-800/30">
-                      <button
-                        onClick={() => handleInsertItem(sectionKey, null)}
-                        className="flex items-center gap-1 text-xs text-gray-400 hover:text-primary transition-colors py-1 px-2 rounded hover:bg-white dark:hover:bg-gray-700"
-                        title="Inserir parte no início"
-                      >
-                        <span className="material-symbols-outlined text-sm">add</span>
-                        <span>Inserir no início</span>
-                      </button>
-                    </div>
-                  )}
-
-                  {sectionItems.map((item, index) => (
-                    <React.Fragment key={item.id}>
-                      <div className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
-                        {/* Position */}
-                        <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
-                          <span className="text-xs font-bold text-gray-500 dark:text-gray-400">
-                            {index + 1}
-                          </span>
-                        </div>
-
-                        {/* Title & Names */}
-                        <div className="flex-1 min-w-0">
-                          <input
-                            type="text"
-                            className="w-full bg-transparent border-none p-0 text-[#111318] dark:text-white text-sm font-medium focus:ring-0 placeholder-gray-400"
-                            placeholder="Digite o título..."
-                            value={item.title}
-                            onChange={(e) => handleTitleChange(item.id, e.target.value)}
-                          />
-                          <input
-                            type="text"
-                            className="w-full bg-transparent border-none p-0 text-primary text-xs focus:ring-0 placeholder-gray-300 mt-1"
-                            placeholder="Designado(s): ex. Fulano / Ciclano"
-                            value={item.assignedNames || ''}
-                            onChange={(e) => handleNamesChange(item.id, e.target.value)}
-                          />
-                        </div>
-
-                        {/* Duration */}
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className="material-symbols-outlined text-gray-400 text-lg">schedule</span>
-                          <input
-                            type="number"
-                            className="w-14 bg-transparent border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-center text-sm focus:border-primary focus:ring-1 focus:ring-primary"
-                            value={item.estimatedMinutes}
-                            onChange={(e) => handleDurationChange(item.id, parseInt(e.target.value) || 0)}
-                          />
-                          <span className="text-xs text-gray-500">min</span>
-                        </div>
-
-                        {/* Comment Indicators (Interactive) */}
-                        <div className="flex items-center gap-1 flex-shrink-0">
+                {/* Parts List with Drag and Drop */}
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={(event) => handleDragEnd(event, sectionKey)}
+                >
+                  <SortableContext
+                    items={sectionItems.map(i => i.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="bg-white dark:bg-surface-dark divide-y divide-gray-100 dark:divide-gray-800">
+                      {/* Insert at beginning button for ministerio and vida_crista */}
+                      {(sectionKey === 'ministerio' || sectionKey === 'vida_crista') && (
+                        <div className="flex justify-center py-1 bg-gray-50 dark:bg-gray-800/30">
                           <button
-                            onClick={() => handleToggleAllowsComments(item.id)}
-                            className={`size-8 flex items-center justify-center rounded-full transition-colors ${item.allowsComments ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 'text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                            title={item.allowsComments ? "Desativar comentários da assistência" : "Ativar comentários da assistência"}
-                          >
-                            <span className="material-symbols-outlined text-lg">chat_bubble</span>
-                          </button>
-
-                          <button
-                            onClick={() => handleToggleRequiresPostComment(item.id)}
-                            className={`size-8 flex items-center justify-center rounded-full transition-colors ${item.requiresPostComment ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' : 'text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                            title={item.requiresPostComment ? "Desativar comentário do instrutor" : "Ativar comentário do instrutor (requerido após parte)"}
-                          >
-                            <span className="material-symbols-outlined text-lg">record_voice_over</span>
-                          </button>
-
-                          <button
-                            onClick={() => handleDeleteItem(item.id)}
-                            className="size-8 flex items-center justify-center rounded-full text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
-                            title="Remover parte"
-                          >
-                            <span className="material-symbols-outlined text-lg">delete</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Insert button between items (only for ministerio and vida_crista) */}
-                      {(sectionKey === 'ministerio' || sectionKey === 'vida_crista') && index < sectionItems.length - 1 && (
-                        <div className="flex justify-center py-1 bg-gray-50/50 dark:bg-gray-800/20 border-dashed border-t border-b border-gray-200 dark:border-gray-700">
-                          <button
-                            onClick={() => handleInsertItem(sectionKey, item.id)}
-                            className="flex items-center gap-1 text-xs text-gray-400 hover:text-primary transition-colors py-0.5 px-2 rounded hover:bg-white dark:hover:bg-gray-700"
-                            title="Inserir parte aqui"
+                            onClick={() => handleInsertItem(sectionKey, null)}
+                            className="flex items-center gap-1 text-xs text-gray-400 hover:text-primary transition-colors py-1 px-2 rounded hover:bg-white dark:hover:bg-gray-700"
+                            title="Inserir parte no início"
                           >
                             <span className="material-symbols-outlined text-sm">add</span>
-                            <span>Inserir aqui</span>
+                            <span>Inserir no início</span>
                           </button>
                         </div>
                       )}
-                    </React.Fragment>
-                  ))}
 
-                  {/* Add Item Button */}
-                  <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-800">
-                    <button
-                      onClick={() => handleAddItem(sectionKey)}
-                      className="flex items-center gap-2 text-sm text-gray-500 hover:text-primary transition-colors py-1 px-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800"
-                    >
-                      <span className="material-symbols-outlined text-lg">add_circle</span>
-                      <span>Adicionar parte em {sectionInfo.label}</span>
-                    </button>
-                  </div>
-                </div>
+                      {sectionItems.map((item, index) => (
+                        <React.Fragment key={item.id}>
+                          <SortableItem
+                            item={item}
+                            index={index}
+                            onTitleChange={handleTitleChange}
+                            onNamesChange={handleNamesChange}
+                            onDurationChange={handleDurationChange}
+                            onToggleAllowsComments={handleToggleAllowsComments}
+                            onToggleRequiresPostComment={handleToggleRequiresPostComment}
+                            onDelete={handleDeleteItem}
+                          />
+
+                          {/* Insert button between items (only for ministerio and vida_crista) */}
+                          {(sectionKey === 'ministerio' || sectionKey === 'vida_crista') && index < sectionItems.length - 1 && (
+                            <div className="flex justify-center py-1 bg-gray-50/50 dark:bg-gray-800/20 border-dashed border-t border-b border-gray-200 dark:border-gray-700">
+                              <button
+                                onClick={() => handleInsertItem(sectionKey, item.id)}
+                                className="flex items-center gap-1 text-xs text-gray-400 hover:text-primary transition-colors py-0.5 px-2 rounded hover:bg-white dark:hover:bg-gray-700"
+                                title="Inserir parte aqui"
+                              >
+                                <span className="material-symbols-outlined text-sm">add</span>
+                                <span>Inserir aqui</span>
+                              </button>
+                            </div>
+                          )}
+                        </React.Fragment>
+                      ))}
+
+                      {/* Add Item Button */}
+                      <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-800">
+                        <button
+                          onClick={() => handleAddItem(sectionKey)}
+                          className="flex items-center gap-2 text-sm text-gray-500 hover:text-primary transition-colors py-1 px-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800"
+                        >
+                          <span className="material-symbols-outlined text-lg">add_circle</span>
+                          <span>Adicionar parte em {sectionInfo.label}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </SortableContext>
+                </DndContext>
               </div>
             );
           })}
-        </div>
-
-        {/* Legend */}
-        <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl flex flex-wrap gap-6 text-sm">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-blue-500 text-lg">chat_bubble</span>
-            <span className="text-gray-600 dark:text-gray-400">Permite comentários da assistência</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-orange-500 text-lg">record_voice_over</span>
-            <span className="text-gray-600 dark:text-gray-400">Requer comentário do instrutor</span>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex flex-col gap-4 mt-8 pt-6 border-t border-[#f0f2f4] dark:border-gray-800">
-          <div className="flex items-start gap-4 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-100">
-            <span className="material-symbols-outlined mt-0.5">info</span>
-            <div className="text-sm">
-              <p className="font-bold mb-1">Pronto para começar?</p>
-              <p className="opacity-90">Revise as partes e clique em "Iniciar Reunião" para começar o cronômetro.</p>
+          {/* Legend */}
+          <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl flex flex-wrap gap-6 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-blue-500 text-lg">chat_bubble</span>
+              <span className="text-gray-600 dark:text-gray-400">Permite comentários da assistência</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-orange-500 text-lg">record_voice_over</span>
+              <span className="text-gray-600 dark:text-gray-400">Requer comentário do instrutor</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-gray-500 text-lg">drag_indicator</span>
+              <span className="text-gray-600 dark:text-gray-400">Arraste para reorganizar</span>
             </div>
           </div>
-          <button
-            onClick={handleBeginMeeting}
-            disabled={saving}
-            className="flex h-14 w-full items-center justify-center rounded-xl bg-primary hover:bg-blue-600 dark:hover:bg-blue-500 text-white shadow-lg shadow-blue-500/30 transition-all active:scale-[0.99] disabled:opacity-50"
-          >
-            <span className="text-lg font-bold tracking-tight mr-2">{saving ? 'Salvando...' : 'Iniciar Reunião'}</span>
-            <span className="material-symbols-outlined">arrow_forward</span>
-          </button>
+
+          {/* Footer */}
+          <div className="flex flex-col gap-4 mt-8 pt-6 border-t border-[#f0f2f4] dark:border-gray-800">
+            <div className="flex items-start gap-4 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-100">
+              <span className="material-symbols-outlined mt-0.5">info</span>
+              <div className="text-sm">
+                <p className="font-bold mb-1">Pronto para começar?</p>
+                <p className="opacity-90">Revise as partes e clique em "Iniciar Reunião" para começar o cronômetro.</p>
+              </div>
+            </div>
+            <button
+              onClick={handleBeginMeeting}
+              disabled={saving}
+              className="flex h-14 w-full items-center justify-center rounded-xl bg-primary hover:bg-blue-600 dark:hover:bg-blue-500 text-white shadow-lg shadow-blue-500/30 transition-all active:scale-[0.99] disabled:opacity-50"
+            >
+              <span className="text-lg font-bold tracking-tight mr-2">{saving ? 'Salvando...' : 'Iniciar Reunião'}</span>
+              <span className="material-symbols-outlined">arrow_forward</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

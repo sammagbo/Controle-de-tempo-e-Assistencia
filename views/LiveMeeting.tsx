@@ -176,6 +176,42 @@ const LiveMeeting: React.FC = () => {
     }
   }, [items]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      switch (e.code) {
+        case 'Space':
+          e.preventDefault();
+          if (isRunning) {
+            handlePause();
+          } else {
+            handleStart();
+          }
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          if (activeIndex < items.length - 1) {
+            handleNext();
+          }
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          if (activeIndex > 0) {
+            handleJumpToItem(activeIndex - 1);
+          }
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isRunning, activeIndex, items.length]);
+
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   const pad = (num: number) => num.toString().padStart(2, '0');

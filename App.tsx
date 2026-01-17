@@ -11,6 +11,7 @@ import DisplayMode from './views/DisplayMode';
 import Statistics from './views/Statistics';
 import Settings from './views/Settings';
 import Login from './views/Login';
+import MeetingHistory from './views/MeetingHistory';
 
 // Protected Route wrapper
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -44,6 +45,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/report" element={<ProtectedRoute><MeetingReport /></ProtectedRoute>} />
       <Route path="/stats" element={<ProtectedRoute><Statistics /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      <Route path="/history" element={<ProtectedRoute><MeetingHistory /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
