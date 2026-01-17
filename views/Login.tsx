@@ -36,7 +36,7 @@ const Login: React.FC = () => {
                               <img
                                     src="/logo.png"
                                     alt="Humaitá te abrasa"
-                                    className="w-32 h-32 mx-auto mb-4 object-contain rounded-full bg-white p-2 shadow-lg"
+                                    className="w-32 h-32 mx-auto mb-4 object-contain rounded-full"
                               />
                               <h1 className="text-3xl font-black text-white">MeetingManager</h1>
                               <p className="text-blue-200 mt-2">Controle de Tempo e Assistência</p>
