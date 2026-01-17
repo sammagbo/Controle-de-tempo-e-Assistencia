@@ -244,9 +244,44 @@ const SetupSession: React.FC = () => {
       estimatedMinutes: 5,
       section: section,
       allowsComments: false,
-      requiresPostComment: false,
+      requiresPostComment: section === 'ministerio', // Ministry parts usually need instructor comment
     };
     setItems(prev => [...prev, newItem]);
+  };
+
+  // Insert a new item at a specific position within a section
+  const handleInsertItem = (section: SectionKey, afterItemId: string | null) => {
+    const newItem: SetupItem = {
+      id: `custom-${Date.now()}`,
+      title: 'Nova Parte',
+      estimatedMinutes: 5,
+      section: section,
+      allowsComments: false,
+      requiresPostComment: section === 'ministerio',
+    };
+
+    setItems(prev => {
+      // Find all items in this section
+      const sectionItems = prev.filter(i => i.section === section);
+      const otherItems = prev.filter(i => i.section !== section);
+
+      if (afterItemId === null) {
+        // Insert at the beginning of the section
+        return [...otherItems, newItem, ...sectionItems].sort((a, b) => {
+          // Maintain original section order by re-sorting
+          const order = ['abertura', 'tesouros', 'ministerio', 'vida_crista', 'encerramento'];
+          return order.indexOf(a.section) - order.indexOf(b.section);
+        });
+      } else {
+        // Insert after a specific item
+        const insertIndex = prev.findIndex(i => i.id === afterItemId);
+        if (insertIndex === -1) return [...prev, newItem];
+
+        const newItems = [...prev];
+        newItems.splice(insertIndex + 1, 0, newItem);
+        return newItems;
+      }
+    });
   };
 
   const handleDeleteItem = (id: string) => {
@@ -412,72 +447,102 @@ const SetupSession: React.FC = () => {
 
                 {/* Parts List */}
                 <div className="bg-white dark:bg-surface-dark divide-y divide-gray-100 dark:divide-gray-800">
-                  {sectionItems.map((item, index) => (
-                    <div key={item.id} className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
-                      {/* Position */}
-                      <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-bold text-gray-500 dark:text-gray-400">
-                          {index + 1}
-                        </span>
-                      </div>
-
-                      {/* Title & Names */}
-                      <div className="flex-1 min-w-0">
-                        <input
-                          type="text"
-                          className="w-full bg-transparent border-none p-0 text-[#111318] dark:text-white text-sm font-medium focus:ring-0 placeholder-gray-400"
-                          placeholder="Digite o título..."
-                          value={item.title}
-                          onChange={(e) => handleTitleChange(item.id, e.target.value)}
-                        />
-                        <input
-                          type="text"
-                          className="w-full bg-transparent border-none p-0 text-primary text-xs focus:ring-0 placeholder-gray-300 mt-1"
-                          placeholder="Designado(s): ex. Fulano / Ciclano"
-                          value={item.assignedNames || ''}
-                          onChange={(e) => handleNamesChange(item.id, e.target.value)}
-                        />
-                      </div>
-
-                      {/* Duration */}
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="material-symbols-outlined text-gray-400 text-lg">schedule</span>
-                        <input
-                          type="number"
-                          className="w-14 bg-transparent border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-center text-sm focus:border-primary focus:ring-1 focus:ring-primary"
-                          value={item.estimatedMinutes}
-                          onChange={(e) => handleDurationChange(item.id, parseInt(e.target.value) || 0)}
-                        />
-                        <span className="text-xs text-gray-500">min</span>
-                      </div>
-
-                      {/* Comment Indicators (Interactive) */}
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        <button
-                          onClick={() => handleToggleAllowsComments(item.id)}
-                          className={`size-8 flex items-center justify-center rounded-full transition-colors ${item.allowsComments ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 'text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                          title={item.allowsComments ? "Desativar comentários da assistência" : "Ativar comentários da assistência"}
-                        >
-                          <span className="material-symbols-outlined text-lg">chat_bubble</span>
-                        </button>
-
-                        <button
-                          onClick={() => handleToggleRequiresPostComment(item.id)}
-                          className={`size-8 flex items-center justify-center rounded-full transition-colors ${item.requiresPostComment ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' : 'text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                          title={item.requiresPostComment ? "Desativar comentário do instrutor" : "Ativar comentário do instrutor (requerido após parte)"}
-                        >
-                          <span className="material-symbols-outlined text-lg">record_voice_over</span>
-                        </button>
-
-                        <button
-                          onClick={() => handleDeleteItem(item.id)}
-                          className="size-8 flex items-center justify-center rounded-full text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
-                          title="Remover parte"
-                        >
-                          <span className="material-symbols-outlined text-lg">delete</span>
-                        </button>
-                      </div>
+                  {/* Insert at beginning button for ministerio and vida_crista */}
+                  {(sectionKey === 'ministerio' || sectionKey === 'vida_crista') && (
+                    <div className="flex justify-center py-1 bg-gray-50 dark:bg-gray-800/30">
+                      <button
+                        onClick={() => handleInsertItem(sectionKey, null)}
+                        className="flex items-center gap-1 text-xs text-gray-400 hover:text-primary transition-colors py-1 px-2 rounded hover:bg-white dark:hover:bg-gray-700"
+                        title="Inserir parte no início"
+                      >
+                        <span className="material-symbols-outlined text-sm">add</span>
+                        <span>Inserir no início</span>
+                      </button>
                     </div>
+                  )}
+
+                  {sectionItems.map((item, index) => (
+                    <React.Fragment key={item.id}>
+                      <div className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
+                        {/* Position */}
+                        <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                          <span className="text-xs font-bold text-gray-500 dark:text-gray-400">
+                            {index + 1}
+                          </span>
+                        </div>
+
+                        {/* Title & Names */}
+                        <div className="flex-1 min-w-0">
+                          <input
+                            type="text"
+                            className="w-full bg-transparent border-none p-0 text-[#111318] dark:text-white text-sm font-medium focus:ring-0 placeholder-gray-400"
+                            placeholder="Digite o título..."
+                            value={item.title}
+                            onChange={(e) => handleTitleChange(item.id, e.target.value)}
+                          />
+                          <input
+                            type="text"
+                            className="w-full bg-transparent border-none p-0 text-primary text-xs focus:ring-0 placeholder-gray-300 mt-1"
+                            placeholder="Designado(s): ex. Fulano / Ciclano"
+                            value={item.assignedNames || ''}
+                            onChange={(e) => handleNamesChange(item.id, e.target.value)}
+                          />
+                        </div>
+
+                        {/* Duration */}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="material-symbols-outlined text-gray-400 text-lg">schedule</span>
+                          <input
+                            type="number"
+                            className="w-14 bg-transparent border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-center text-sm focus:border-primary focus:ring-1 focus:ring-primary"
+                            value={item.estimatedMinutes}
+                            onChange={(e) => handleDurationChange(item.id, parseInt(e.target.value) || 0)}
+                          />
+                          <span className="text-xs text-gray-500">min</span>
+                        </div>
+
+                        {/* Comment Indicators (Interactive) */}
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button
+                            onClick={() => handleToggleAllowsComments(item.id)}
+                            className={`size-8 flex items-center justify-center rounded-full transition-colors ${item.allowsComments ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 'text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                            title={item.allowsComments ? "Desativar comentários da assistência" : "Ativar comentários da assistência"}
+                          >
+                            <span className="material-symbols-outlined text-lg">chat_bubble</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleToggleRequiresPostComment(item.id)}
+                            className={`size-8 flex items-center justify-center rounded-full transition-colors ${item.requiresPostComment ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' : 'text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                            title={item.requiresPostComment ? "Desativar comentário do instrutor" : "Ativar comentário do instrutor (requerido após parte)"}
+                          >
+                            <span className="material-symbols-outlined text-lg">record_voice_over</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleDeleteItem(item.id)}
+                            className="size-8 flex items-center justify-center rounded-full text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
+                            title="Remover parte"
+                          >
+                            <span className="material-symbols-outlined text-lg">delete</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Insert button between items (only for ministerio and vida_crista) */}
+                      {(sectionKey === 'ministerio' || sectionKey === 'vida_crista') && index < sectionItems.length - 1 && (
+                        <div className="flex justify-center py-1 bg-gray-50/50 dark:bg-gray-800/20 border-dashed border-t border-b border-gray-200 dark:border-gray-700">
+                          <button
+                            onClick={() => handleInsertItem(sectionKey, item.id)}
+                            className="flex items-center gap-1 text-xs text-gray-400 hover:text-primary transition-colors py-0.5 px-2 rounded hover:bg-white dark:hover:bg-gray-700"
+                            title="Inserir parte aqui"
+                          >
+                            <span className="material-symbols-outlined text-sm">add</span>
+                            <span>Inserir aqui</span>
+                          </button>
+                        </div>
+                      )}
+                    </React.Fragment>
                   ))}
 
                   {/* Add Item Button */}
