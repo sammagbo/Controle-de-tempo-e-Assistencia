@@ -126,40 +126,30 @@ const Settings: React.FC = () => {
                                           <span className="material-symbols-outlined text-4xl">sync</span>
                                     </div>
                                     <div className="flex-1">
-                                          <h2 className="text-xl font-bold mb-2">Fonte de Dados (JW.ORG)</h2>
-                                          <p className="text-gray-600 dark:text-gray-300 mb-6">
-                                                Escolha o idioma para baixar a programação das reuniões.
+                                          <h2 className="text-xl font-bold mb-2">Sincronização de Dados (JW.ORG)</h2>
+                                          <p className="text-gray-600 dark:text-gray-300 mb-4">
+                                                Para baixar novos períodos e semanas, execute os comandos abaixo no terminal:
                                           </p>
 
-                                          <div className="flex gap-4 mb-6">
-                                                <button
-                                                      onClick={() => {
-                                                            localStorage.setItem('jw_lang', 'pt');
-                                                            window.location.reload(); // Simple reload to apply
-                                                      }}
-                                                      className={`px-4 py-2 rounded-lg font-bold transition-all ${(localStorage.getItem('jw_lang') || 'pt') === 'pt'
-                                                                  ? 'bg-blue-600 text-white ring-2 ring-blue-300'
-                                                                  : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
-                                                            }`}
-                                                >
-                                                      Português (Brasil)
-                                                </button>
-                                                <button
-                                                      onClick={() => {
-                                                            localStorage.setItem('jw_lang', 'fr');
-                                                            window.location.reload();
-                                                      }}
-                                                      className={`px-4 py-2 rounded-lg font-bold transition-all ${localStorage.getItem('jw_lang') === 'fr'
-                                                                  ? 'bg-indigo-600 text-white ring-2 ring-indigo-300'
-                                                                  : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
-                                                            }`}
-                                                >
-                                                      Français
-                                                </button>
+                                          <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm mb-4">
+                                                <p className="mb-2"># Sincronizar dados em Português:</p>
+                                                <p className="text-white mb-4">npm run sync:pt</p>
+                                                <p className="mb-2"># Sincronizar dados em Francês:</p>
+                                                <p className="text-white">npm run sync:fr</p>
                                           </div>
 
-                                          <p className="text-sm text-gray-500 italic">
-                                                Nota: Ao trocar o idioma, as próximas sincronizações buscarão os dados do site no idioma selecionado.
+                                          <div className="flex gap-4 mb-4">
+                                                <span className={`px-3 py-1 rounded-full text-sm font-bold ${(localStorage.getItem('jw_lang') || 'pt') === 'pt' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
+                                                      🇧🇷 Português
+                                                </span>
+                                                <span className={`px-3 py-1 rounded-full text-sm font-bold ${localStorage.getItem('jw_lang') === 'fr' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500'}`}>
+                                                      🇫🇷 Français
+                                                </span>
+                                          </div>
+
+                                          <p className="text-sm text-amber-600 dark:text-amber-400 flex items-center gap-2">
+                                                <span className="material-symbols-outlined text-lg">info</span>
+                                                A sincronização pelo navegador está desabilitada devido a restrições de segurança (CORS).
                                           </p>
                                     </div>
                               </div>
