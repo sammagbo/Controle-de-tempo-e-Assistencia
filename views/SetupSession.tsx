@@ -51,7 +51,8 @@ const SetupSession: React.FC = () => {
 
     setItems(currentItems =>
       currentItems.map(item => {
-        if ((item.title === 'Comentários Iniciais' || item.title === 'Comentários Finais') && !item.assignedNames) {
+        // Always update Comentários Iniciais and Comentários Finais with president name
+        if (item.title === 'Comentários Iniciais' || item.title === 'Comentários Finais') {
           return { ...item, assignedNames: presidentName };
         }
         return item;
