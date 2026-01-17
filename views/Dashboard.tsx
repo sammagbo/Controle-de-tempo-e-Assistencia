@@ -552,6 +552,22 @@ const Dashboard: React.FC = () => {
             </>
           )}
         </div>
+
+        {/* Footer */}
+        <footer className="mt-12 py-6 text-center text-sm text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700">
+          <p>© 2025 Mijean Rochus. All Rights Reserved.</p>
+          <p className="mt-1">
+            Developed with <span className="text-red-500">♥</span> by{' '}
+            <a
+              href="https://magbostudio.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline font-medium"
+            >
+              Magbo Studio
+            </a>
+          </p>
+        </footer>
       </main>
     </div>
   );
