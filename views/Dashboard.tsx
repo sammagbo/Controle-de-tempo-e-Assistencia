@@ -269,8 +269,16 @@ const Dashboard: React.FC = () => {
       <header className="bg-white dark:bg-[#1A2230] border-b border-[#f0f2f4] dark:border-[#2a3441] sticky top-0 z-50">
         <div className="px-4 sm:px-6 lg:px-8 max-w-[1280px] mx-auto h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="text-primary flex items-center justify-center">
-              <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>meeting_room</span>
+            <div className="relative w-12 h-12 rounded-full overflow-hidden bg-white shadow-md">
+              <video
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="w-full h-full object-cover"
+              >
+                <source src="/Minimalist_line_art_1080p_202601171507.mp4" type="video/mp4" />
+              </video>
             </div>
             <h2 className="text-[#111318] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">MeetingManager</h2>
           </div>
