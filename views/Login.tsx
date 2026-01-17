@@ -116,7 +116,7 @@ const Login: React.FC = () => {
                               <p className="mt-1">
                                     Developed with <span className="text-red-400">♥</span> by{' '}
                                     <a
-                                          href="https://magbostudio.com"
+                                          href="https://www.linkedin.com/in/sam-magbo-02086555/"
                                           target="_blank"
                                           rel="noopener noreferrer"
                                           className="text-white hover:underline font-medium"
