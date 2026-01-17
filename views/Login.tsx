@@ -33,9 +33,11 @@ const Login: React.FC = () => {
                   <div className="max-w-md w-full">
                         {/* Logo */}
                         <div className="text-center mb-8">
-                              <div className="inline-flex items-center justify-center size-16 rounded-2xl bg-white/10 backdrop-blur-sm mb-4">
-                                    <span className="material-symbols-outlined text-white text-4xl">timer</span>
-                              </div>
+                              <img
+                                    src="/logo.png"
+                                    alt="Humaitá te abrasa"
+                                    className="w-32 h-32 mx-auto mb-4 object-contain"
+                              />
                               <h1 className="text-3xl font-black text-white">MeetingManager</h1>
                               <p className="text-blue-200 mt-2">Controle de Tempo e Assistência</p>
                         </div>
