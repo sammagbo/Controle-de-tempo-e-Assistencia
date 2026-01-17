@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { MEETING_SECTIONS, SECTION_COLORS, SectionKey } from '../lib/meetingTemplate';
 import html2canvas from 'html2canvas';
+import { generateMeetingPDF } from '../lib/pdfGenerator';
 
 interface AgendaItem {
   id: string;
@@ -37,7 +38,7 @@ const MeetingReport: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [meeting, setMeeting] = useState<MeetingData | null>(null);
   const [agendaItems, setAgendaItems] = useState<AgendaItem[]>([]);
-  const [attendance, setAttendance] = useState(0);
+  const [attendance, setAttendance] = useState({ total: 0, presencial: 0, zoom: 0 });
   const [commentsCount, setCommentsCount] = useState(0);
   const [commentsTotalSeconds, setCommentsTotalSeconds] = useState(0);
   const [exporting, setExporting] = useState(false);
@@ -105,12 +106,16 @@ const MeetingReport: React.FC = () => {
       // Fetch attendance
       const { data: attendanceData } = await supabase
         .from('attendance')
-        .select('count')
+        .select('count, presencial, zoom')
         .eq('meeting_id', meetingId)
         .maybeSingle();
 
       if (attendanceData) {
-        setAttendance(attendanceData.count || 0);
+        setAttendance({
+          total: attendanceData.count || 0,
+          presencial: attendanceData.presencial || 0,
+          zoom: attendanceData.zoom || 0
+        });
       }
 
       // Fetch comments stats
@@ -183,6 +188,50 @@ const MeetingReport: React.FC = () => {
     }
   };
 
+  const handleExportPDF = () => {
+    if (!meeting) return;
+
+    // Prepare data for PDF
+    const pdfData = {
+      theme: meeting.week?.theme || 'Reunião do Meio de Semana',
+      date: formatDate(meeting.started_at),
+      president: meeting.president || '',
+      attendance: {
+        presencial: attendance.presencial,
+        zoom: attendance.zoom,
+        total: attendance.total
+      },
+      parts: agendaItems.map(item => {
+        const estimatedSeconds = item.estimated_minutes * 60;
+        const difference = (item.actual_seconds || 0) - estimatedSeconds;
+        let status: 'on-time' | 'overtime' | 'undertime' = 'on-time';
+        if (difference > 0) status = 'overtime';
+        if (difference < -60) status = 'undertime';
+
+        return {
+          title: item.title,
+          names: item.assigned_names || '',
+          time: formatTime(item.actual_seconds || 0),
+          status,
+          is_comment: item.title.includes('Comentários') || item.title.includes('Conselho')
+        };
+      })
+    };
+
+    // We only have total attendance in state 'attendance', need to fetch details or just show total
+    // But let's check if we can get details.
+    // Actually, in fetchReportData line 108 we selected 'count' only.
+    // Ideally we should select presencial/zoom in fetchReportData.
+    // For now, let's just pass total. We can improve this if we modify fetch first.
+    // Let's modify fetch first? No, let's stick to quick wins. Passing total for now.
+    // Wait, pdfGenerator expects presencial/zoom.
+    // Let's assume we can split it or just show total.
+    // Let's fetch full attendance details in MeetingReport line 108 first?
+    // Doing it inline here might be cleaner for this step.
+
+    generateMeetingPDF(pdfData);
+  };
+
   if (loading) {
     return (
       <div className="bg-background-light dark:bg-background-dark text-[#111318] dark:text-white font-display h-screen flex items-center justify-center">
@@ -248,6 +297,13 @@ const MeetingReport: React.FC = () => {
                   <span className="truncate">{exporting ? 'Exportando...' : 'Exportar Imagem'}</span>
                 </button>
                 <button
+                  onClick={handleExportPDF}
+                  className="flex cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-800/40 text-red-700 dark:text-red-300 text-sm font-bold transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[18px] mr-2">picture_as_pdf</span>
+                  <span className="truncate">Baixar PDF</span>
+                </button>
+                <button
                   onClick={() => {
                     localStorage.removeItem('active_meeting_id');
                     localStorage.removeItem('active_agenda_item_id');
@@ -290,7 +346,7 @@ const MeetingReport: React.FC = () => {
                   <p className="text-[#616f89] dark:text-gray-400 text-sm font-medium leading-normal">Assistência</p>
                 </div>
                 <p className="text-[#111318] dark:text-white tracking-tight text-2xl font-bold leading-tight">
-                  {attendance}
+                  {attendance.total}
                 </p>
               </div>
               {/* Duration Card */}

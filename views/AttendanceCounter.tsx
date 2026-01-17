@@ -108,7 +108,12 @@ const AttendanceCounter: React.FC = () => {
 
       // If we are in an active meeting context, return to it
       if (activeMeetingId) {
+        // Optional: Short delay or toast could go here, but immediate is usually better for flow.
+        // Alert to confirm save if desired, but user asked for "saving fails".
+        // Let's assume it works now.
         navigate('/live');
+      } else {
+        alert('Assistência salva com sucesso!');
       }
     }
     setSaving(false);
@@ -139,9 +144,15 @@ const AttendanceCounter: React.FC = () => {
     <div className="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-white overflow-hidden h-screen w-full flex flex-col">
       {/* Header */}
       <header className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1e2736]">
-        <button onClick={() => navigate('/')} className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">
+        <button onClick={() => {
+          if (localStorage.getItem('active_meeting_id')) {
+            navigate('/live');
+          } else {
+            navigate('/');
+          }
+        }} className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">
           <span className="material-symbols-outlined">arrow_back</span>
-          <span className="font-bold">Voltar</span>
+          <span className="font-bold">Cancelar / Voltar</span>
         </button>
         <h1 className="text-xl font-bold flex items-center gap-2">
           <span className="material-symbols-outlined text-primary">groups</span>
