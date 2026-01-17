@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS meetings (
   started_at TIMESTAMPTZ,
   finished_at TIMESTAMPTZ,
   total_duration_seconds INTEGER,
+  president TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -62,6 +63,7 @@ CREATE TABLE IF NOT EXISTS agenda_items (
   section TEXT NOT NULL DEFAULT 'abertura',  -- abertura, tesouros, ministerio, vida_crista, encerramento
   allows_comments BOOLEAN DEFAULT false,      -- true se parte aceita comentários
   requires_post_comment BOOLEAN DEFAULT false, -- true para partes de alunos
+  assigned_names TEXT DEFAULT '',              -- nomes dos irmãos designados (ex: "Ionara / Laura")
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -77,15 +79,31 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agenda_items' AND column_name = 'requires_post_comment') THEN
     ALTER TABLE agenda_items ADD COLUMN requires_post_comment BOOLEAN DEFAULT false;
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agenda_items' AND column_name = 'assigned_names') THEN
+    ALTER TABLE agenda_items ADD COLUMN assigned_names TEXT DEFAULT '';
+  END IF;
 END $$;
 
 -- 5. ATTENDANCE (Assistência)
 CREATE TABLE IF NOT EXISTS attendance (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   meeting_id UUID REFERENCES meetings(id) ON DELETE CASCADE,
-  count INTEGER NOT NULL DEFAULT 0,
+  count INTEGER NOT NULL DEFAULT 0,  -- Legacy, keep for compatibility
+  presencial INTEGER NOT NULL DEFAULT 0,
+  zoom INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Adicionar colunas presencial/zoom se não existirem (para bancos existentes)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'attendance' AND column_name = 'presencial') THEN
+    ALTER TABLE attendance ADD COLUMN presencial INTEGER NOT NULL DEFAULT 0;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'attendance' AND column_name = 'zoom') THEN
+    ALTER TABLE attendance ADD COLUMN zoom INTEGER NOT NULL DEFAULT 0;
+  END IF;
+END $$;
 
 -- 6. COMMENTS (Comentários)
 CREATE TABLE IF NOT EXISTS comments (
@@ -164,4 +182,12 @@ BEGIN
   DELETE FROM periods 
   WHERE name = 'Janeiro - Fevereiro 2026' 
   AND id NOT IN (SELECT DISTINCT period_id FROM weeks);
+END $$;
+
+-- Adicionar coluna (president - Presidente) à tabela meetings se não existir
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'meetings' AND column_name = 'president') THEN
+    ALTER TABLE meetings ADD COLUMN president TEXT;
+  END IF;
 END $$;

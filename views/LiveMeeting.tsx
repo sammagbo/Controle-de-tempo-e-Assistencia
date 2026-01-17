@@ -13,6 +13,7 @@ interface LiveAgendaItem {
   section: SectionKey;
   allows_comments: boolean;
   requires_post_comment: boolean;
+  assigned_names?: string;
 }
 
 const LiveMeeting: React.FC = () => {
@@ -63,19 +64,63 @@ const LiveMeeting: React.FC = () => {
     fetchAgendaItems();
   }, [navigate]);
 
-  // Timer interval
+  // Timer logic with persistence
   useEffect(() => {
     let interval: any;
+
     if (isRunning) {
-      interval = setInterval(() => {
-        setTotalSeconds(prev => {
-          timerRef.current = prev + 1;
-          return prev + 1;
-        });
-      }, 1000);
+      // Ensure we have a start time
+      let startTime = parseInt(localStorage.getItem('timer_start_timestamp') || '0');
+      let baseSeconds = parseInt(localStorage.getItem('timer_base_seconds') || '0');
+
+      if (!startTime) {
+        // First start or recovery failed, set current state
+        startTime = Date.now();
+        baseSeconds = totalSeconds;
+        localStorage.setItem('timer_start_timestamp', startTime.toString());
+        localStorage.setItem('timer_base_seconds', baseSeconds.toString());
+      }
+
+      // Update immediately
+      const updateTimer = () => {
+        const now = Date.now();
+        const elapsed = Math.floor((now - startTime) / 1000);
+        const newTotal = baseSeconds + elapsed;
+        setTotalSeconds(newTotal);
+        timerRef.current = newTotal;
+      };
+
+      updateTimer(); // Update immediately
+      interval = setInterval(updateTimer, 1000);
     }
+
     return () => clearInterval(interval);
   }, [isRunning]);
+
+  // Check for persistent state on mount/items load
+  useEffect(() => {
+    if (items.length > 0 && !isRunning) {
+      const storedStartTime = localStorage.getItem('timer_start_timestamp');
+      const storedActiveItemId = localStorage.getItem('timer_active_item_id');
+
+      if (storedStartTime && storedActiveItemId) {
+        // We have a running timer state
+        const activeIdx = items.findIndex(i => i.id === storedActiveItemId);
+        if (activeIdx >= 0) {
+          if (activeIdx !== activeIndex) {
+            setActiveIndex(activeIdx);
+          }
+          setIsRunning(true);
+          // Total seconds will be corrected by the timer effect
+        } else {
+          // Item mismatch, clear invalid state
+          localStorage.removeItem('timer_start_timestamp');
+          localStorage.removeItem('timer_base_seconds');
+          localStorage.removeItem('timer_active_item_id');
+        }
+      }
+    }
+  }, [items]);
 
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
@@ -161,14 +206,25 @@ const LiveMeeting: React.FC = () => {
   };
 
   const handleStart = async () => {
-    if (items[activeIndex]) {
-      await updateItemStatus(items[activeIndex].id, 'active');
+    const currentItem = items[activeIndex];
+    if (currentItem) {
+      await updateItemStatus(currentItem.id, 'active');
+
+      // Set persistence
+      localStorage.setItem('timer_start_timestamp', Date.now().toString());
+      localStorage.setItem('timer_base_seconds', totalSeconds.toString());
+      localStorage.setItem('timer_active_item_id', currentItem.id);
     }
     setIsRunning(true);
   };
 
   const handlePause = async () => {
     setIsRunning(false);
+    // Clear persistence
+    localStorage.removeItem('timer_start_timestamp');
+    localStorage.removeItem('timer_base_seconds');
+    localStorage.removeItem('timer_active_item_id');
+
     // Save current time when pausing
     if (items[activeIndex]) {
       await saveActualSeconds(items[activeIndex].id, timerRef.current);
@@ -191,6 +247,11 @@ const LiveMeeting: React.FC = () => {
       // Check if current item requires a post-comment (Student Part)
       if (items[activeIndex] && items[activeIndex].requires_post_comment) {
         setIsRunning(false);
+        // Clear persistence
+        localStorage.removeItem('timer_start_timestamp');
+        localStorage.removeItem('timer_base_seconds');
+        localStorage.removeItem('timer_active_item_id');
+
         // Store ID of the item being commented on
         localStorage.setItem('active_agenda_item_id', items[activeIndex].id);
         // Flag to tell CommentTracker to return to LiveMeeting immediately
@@ -210,8 +271,50 @@ const LiveMeeting: React.FC = () => {
       // Reset timer
       setTotalSeconds(0);
       timerRef.current = 0;
+
+      // Update persistence for next item if running
+      if (isRunning) {
+        localStorage.setItem('timer_start_timestamp', Date.now().toString());
+        localStorage.setItem('timer_base_seconds', '0');
+        localStorage.setItem('timer_active_item_id', items[nextIndex].id);
+      } else {
+        // Just clear if not running
+        localStorage.removeItem('timer_start_timestamp');
+        localStorage.removeItem('timer_base_seconds');
+        localStorage.removeItem('timer_active_item_id');
+      }
     } else {
       setIsRunning(false);
+      localStorage.removeItem('timer_start_timestamp');
+      localStorage.removeItem('timer_base_seconds');
+      localStorage.removeItem('timer_active_item_id');
+    }
+  };
+
+  const handleJumpToItem = async (index: number) => {
+    if (index === activeIndex) return;
+
+    // Save current item state just in case
+    if (items[activeIndex]) {
+      await saveActualSeconds(items[activeIndex].id, timerRef.current);
+    }
+
+    // Stop current timer & clear persistence
+    setIsRunning(false);
+    localStorage.removeItem('timer_start_timestamp');
+    localStorage.removeItem('timer_base_seconds');
+    localStorage.removeItem('timer_active_item_id');
+
+    // Prepare switch
+    const newItem = items[index];
+    if (newItem) {
+      // Update new item status to active
+      await updateItemStatus(newItem.id, 'active');
+
+      // Update local state
+      setActiveIndex(index);
+      setTotalSeconds(newItem.actual_seconds || 0);
+      timerRef.current = newItem.actual_seconds || 0;
     }
   };
 
@@ -255,6 +358,13 @@ const LiveMeeting: React.FC = () => {
         </div>
         <div className="flex flex-1 justify-end items-center gap-6">
           <div className="flex gap-2">
+            {/* Botão Modo Telão */}
+            <button onClick={() => navigate('/display')}
+              className="flex items-center justify-center overflow-hidden rounded-lg h-9 px-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-sm font-medium leading-normal hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              title="Modo Telão (Projeção)"
+            >
+              <span className="material-symbols-outlined text-[18px]">tv</span>
+            </button>
             <button onClick={() => navigate('/attendance')}
               className="flex items-center justify-center overflow-hidden rounded-lg h-9 px-4 bg-primary/10 text-primary dark:text-blue-400 text-sm font-bold leading-normal tracking-[0.015em] border border-primary/20 hover:bg-primary/20 transition-colors"
             >
@@ -302,6 +412,12 @@ const LiveMeeting: React.FC = () => {
               <h1 className="text-[#111318] dark:text-white tracking-tight text-3xl md:text-5xl font-bold leading-tight">
                 {activeItem?.title || 'Nenhuma parte'}
               </h1>
+              {activeItem?.assigned_names && (
+                <p className="text-primary dark:text-blue-400 text-lg font-medium mt-2">
+                  <span className="material-symbols-outlined align-middle text-lg mr-1">person</span>
+                  {activeItem.assigned_names}
+                </p>
+              )}
             </div>
 
             {/* Mega Timer - Minutes and Seconds ONLY */}
@@ -330,28 +446,28 @@ const LiveMeeting: React.FC = () => {
             <div className="flex flex-wrap gap-4 w-full justify-center max-w-[800px] pt-8">
               <button
                 onClick={handleStart}
-                className={`flex-1 min-w-[160px] h-16 cursor-pointer items-center justify-center gap-3 rounded-2xl bg-green-600 hover:bg-green-700 text-white shadow-lg transition-all active:scale-95 ${isRunning ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`flex flex-1 min-w-[160px] h-16 cursor-pointer items-center justify-center gap-3 rounded-2xl bg-green-600 hover:bg-green-700 text-white shadow-lg transition-all active:scale-95 ${isRunning ? 'opacity-50 cursor-not-allowed' : ''}`}
                 disabled={isRunning}
               >
-                <span className="material-symbols-outlined text-[32px] fill-current">play_arrow</span>
+                <span className="material-symbols-outlined text-[28px]">play_arrow</span>
                 <span className="text-xl font-bold">Iniciar</span>
               </button>
 
               <button
                 onClick={handlePause}
-                className={`flex-1 min-w-[160px] h-16 cursor-pointer items-center justify-center gap-3 rounded-2xl bg-yellow-500 hover:bg-yellow-600 text-white shadow-lg transition-all active:scale-95 ${!isRunning ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`flex flex-1 min-w-[160px] h-16 cursor-pointer items-center justify-center gap-3 rounded-2xl bg-yellow-500 hover:bg-yellow-600 text-white shadow-lg transition-all active:scale-95 ${!isRunning ? 'opacity-50 cursor-not-allowed' : ''}`}
                 disabled={!isRunning}
               >
-                <span className="material-symbols-outlined text-[32px]">pause</span>
+                <span className="material-symbols-outlined text-[28px]">pause</span>
                 <span className="text-xl font-bold">Pausar</span>
               </button>
 
               <button
                 onClick={handleNext}
-                className="flex-1 min-w-[160px] h-16 cursor-pointer items-center justify-center gap-3 rounded-2xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:opacity-90 transition-all active:scale-95"
+                className="flex flex-1 min-w-[160px] h-16 cursor-pointer items-center justify-center gap-3 rounded-2xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:opacity-90 transition-all active:scale-95"
               >
                 <span className="text-xl font-bold">Próximo</span>
-                <span className="material-symbols-outlined text-[32px]">skip_next</span>
+                <span className="material-symbols-outlined text-[28px]">skip_next</span>
               </button>
             </div>
           </div>
@@ -409,15 +525,23 @@ const LiveMeeting: React.FC = () => {
               }
 
               return (
-                <div key={item.id} className="flex items-start gap-4 p-4 rounded-xl bg-white dark:bg-surface-dark border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer group">
+                <div
+                  key={item.id}
+                  onClick={() => handleJumpToItem(index)}
+                  className="flex items-start gap-4 p-4 rounded-xl bg-white dark:bg-surface-dark border border-gray-200 dark:border-gray-700 hover:border-primary/50 dark:hover:border-blue-500/50 hover:bg-gray-50 dark:hover:bg-gray-800/80 transition-all cursor-pointer group"
+                >
                   <div className="flex-shrink-0 mt-1">
-                    <div className="size-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center group-hover:bg-gray-200 dark:group-hover:bg-gray-600 transition-colors">
-                      <span className="text-xs font-bold text-gray-500 dark:text-gray-400">{index + 1}</span>
+                    <div className="size-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+                      <span className="text-xs font-bold text-gray-500 dark:text-gray-400 group-hover:text-white">{index + 1}</span>
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[#111318] dark:text-white text-base font-semibold group-hover:text-primary transition-colors">{item.title}</p>
                     <p className="text-sm text-gray-500 mt-0.5">{item.estimated_minutes} min • Pendente</p>
+                  </div>
+                  {/* Play icon on hover */}
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity self-center">
+                    <span className="material-symbols-outlined text-primary">play_circle</span>
                   </div>
                 </div>
               );

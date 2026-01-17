@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CURRENT_USER } from '../types';
 import { supabase } from '../lib/supabaseClient';
+import { useAuth } from '../lib/AuthContext';
+import { syncCalendarFromJwOrg, needsSync } from '../lib/calendarSync';
 
 interface Period {
   id: string;
@@ -18,6 +20,7 @@ interface Week {
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { signOut, user } = useAuth();
   const [periods, setPeriods] = useState<Period[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState<string>('');
   const [weeks, setWeeks] = useState<Week[]>([]);
@@ -25,6 +28,67 @@ const Dashboard: React.FC = () => {
   const [loadingWeeks, setLoadingWeeks] = useState(false);
   const [selectingDayForWeek, setSelectingDayForWeek] = useState<string | null>(null);
   const [creatingMeeting, setCreatingMeeting] = useState(false);
+  const [suggestedWeekId, setSuggestedWeekId] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncNeeded, setSyncNeeded] = useState(false);
+
+  // Helper function to check if today falls within a week's date range
+  const findCurrentWeek = (weeksList: Week[]): string | null => {
+    const today = new Date();
+    const currentDay = today.getDate();
+    const currentMonth = today.getMonth(); // 0-indexed
+    const currentYear = today.getFullYear();
+
+    const monthNames: Record<string, number> = {
+      'janeiro': 0, 'fevereiro': 1, 'março': 2, 'abril': 3,
+      'maio': 4, 'junho': 5, 'julho': 6, 'agosto': 7,
+      'setembro': 8, 'outubro': 9, 'novembro': 10, 'dezembro': 11
+    };
+
+    for (const week of weeksList) {
+      // Parse date_range like "13-19 Janeiro" or "27 Janeiro - 2 Fevereiro"
+      const dateRange = week.date_range.toLowerCase();
+
+      // Try to match pattern: "DD-DD Mês" or "DD Mês - DD Mês"
+      const simpleMatch = dateRange.match(/(\d+)-(\d+)\s+(\w+)/);
+      const complexMatch = dateRange.match(/(\d+)\s+(\w+)\s*-\s*(\d+)\s+(\w+)/);
+
+      let startDay: number, endDay: number, startMonth: number, endMonth: number;
+
+      if (complexMatch) {
+        // Pattern: "27 Janeiro - 2 Fevereiro"
+        startDay = parseInt(complexMatch[1]);
+        startMonth = monthNames[complexMatch[2]] ?? -1;
+        endDay = parseInt(complexMatch[3]);
+        endMonth = monthNames[complexMatch[4]] ?? -1;
+      } else if (simpleMatch) {
+        // Pattern: "13-19 Janeiro"
+        startDay = parseInt(simpleMatch[1]);
+        endDay = parseInt(simpleMatch[2]);
+        startMonth = monthNames[simpleMatch[3]] ?? -1;
+        endMonth = startMonth;
+      } else {
+        continue;
+      }
+
+      if (startMonth === -1 || endMonth === -1) continue;
+
+      // Check if today is within the range
+      const startDate = new Date(currentYear, startMonth, startDay);
+      const endDate = new Date(currentYear, endMonth, endDay);
+
+      // Handle year rollover (e.g., December to January)
+      if (endMonth < startMonth) {
+        endDate.setFullYear(currentYear + 1);
+      }
+
+      if (today >= startDate && today <= endDate) {
+        return week.id;
+      }
+    }
+
+    return null;
+  };
 
   const handleStartMeeting = async (weekId: string, meetingDay: string) => {
     if (!weekId || !meetingDay) {
@@ -76,13 +140,58 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  // Fetch periods on mount
+  // Handle calendar sync from jw.org
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const result = await syncCalendarFromJwOrg();
+      if (result.success) {
+        alert(result.message);
+        // Reload periods after sync
+        window.location.reload();
+      } else {
+        alert(result.message);
+      }
+    } catch (error) {
+      console.error('Sync error:', error);
+      alert('Erro ao sincronizar calendário.');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  // Check if sync is needed on mount
+  useEffect(() => {
+    const checkSync = async () => {
+      const needed = await needsSync();
+      setSyncNeeded(needed);
+    };
+    checkSync();
+  }, []);
+
+  // Fetch periods on mount (only periods that have weeks)
   useEffect(() => {
     const fetchPeriods = async () => {
       setLoadingPeriods(true);
+
+      // First get all period IDs that have weeks
+      const { data: weeksData } = await supabase
+        .from('weeks')
+        .select('period_id');
+
+      const periodIdsWithWeeks = [...new Set(weeksData?.map(w => w.period_id).filter(Boolean) || [])];
+
+      if (periodIdsWithWeeks.length === 0) {
+        setPeriods([]);
+        setLoadingPeriods(false);
+        return;
+      }
+
+      // Then fetch only those periods
       const { data, error } = await supabase
         .from('periods')
-        .select('id, name');
+        .select('id, name')
+        .in('id', periodIdsWithWeeks);
 
       if (error) {
         console.error('Error fetching periods:', error);
@@ -102,6 +211,7 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     if (!selectedPeriod) {
       setWeeks([]);
+      setSuggestedWeekId(null);
       return;
     }
 
@@ -116,8 +226,12 @@ const Dashboard: React.FC = () => {
       if (error) {
         console.error('Error fetching weeks:', error);
         setWeeks([]);
+        setSuggestedWeekId(null);
       } else if (data) {
         setWeeks(data);
+        // Find and set the current week
+        const currentWeekId = findCurrentWeek(data);
+        setSuggestedWeekId(currentWeekId);
       }
       setLoadingWeeks(false);
     };
@@ -160,14 +274,60 @@ const Dashboard: React.FC = () => {
             <h2 className="text-[#111318] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">MeetingManager</h2>
           </div>
           <div className="flex items-center gap-4">
-            <button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[#f0f2f4] dark:hover:bg-[#2a3441] transition-colors">
-              <div
-                className="bg-center bg-no-repeat bg-cover rounded-full size-8 bg-gray-200"
-                style={{ backgroundImage: `url("${CURRENT_USER.avatarUrl}")` }}
-              ></div>
-              <span className="text-sm font-medium text-[#111318] dark:text-white hidden sm:block">{CURRENT_USER.name}</span>
-              <span className="material-symbols-outlined text-[#616f89] dark:text-[#9ca3af]" style={{ fontSize: '20px' }}>expand_more</span>
+            {/* Attendance Counter (Independent) */}
+            <button
+              onClick={() => navigate('/attendance')}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors text-green-700 dark:text-green-400"
+              title="Contar Assistência"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>groups</span>
+              <span className="text-sm font-bold hidden md:block">Assistência</span>
             </button>
+            {/* Statistics Link */}
+            <button
+              onClick={() => navigate('/stats')}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[#f0f2f4] dark:hover:bg-[#2a3441] transition-colors text-gray-600 dark:text-gray-300"
+              title="Estatísticas"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>bar_chart</span>
+              <span className="text-sm font-medium hidden md:block">Estatísticas</span>
+            </button>
+            {/* Sync Calendar Button */}
+            <button
+              onClick={handleSync}
+              disabled={syncing}
+              className={`relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${syncNeeded
+                ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 hover:bg-orange-200'
+                : 'hover:bg-[#f0f2f4] dark:hover:bg-[#2a3441] text-gray-600 dark:text-gray-300'
+                }`}
+              title={syncing ? 'Sincronizando...' : syncNeeded ? 'Sincronizar calendário (recomendado)' : 'Sincronizar calendário'}
+            >
+              {syncing ? (
+                <span className="material-symbols-outlined animate-spin" style={{ fontSize: '20px' }}>sync</span>
+              ) : (
+                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>cloud_sync</span>
+              )}
+              <span className="text-sm font-medium hidden md:block">{syncing ? 'Sincronizando...' : 'Sincronizar'}</span>
+              {syncNeeded && !syncing && (
+                <span className="absolute -top-1 -right-1 size-3 bg-orange-500 rounded-full animate-pulse"></span>
+              )}
+            </button>
+            {/* User Info & Logout */}
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-[#2a3441]">
+              <div className="size-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm">
+                {user?.email?.charAt(0).toUpperCase() || 'U'}
+              </div>
+              <span className="text-sm font-medium text-[#111318] dark:text-white hidden sm:block max-w-[120px] truncate">
+                {user?.email || 'Usuário'}
+              </span>
+              <button
+                onClick={signOut}
+                className="ml-2 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 transition-colors"
+                title="Sair"
+              >
+                <span className="material-symbols-outlined text-xl">logout</span>
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -249,95 +409,129 @@ const Dashboard: React.FC = () => {
               <p className="mt-2">Nenhuma semana encontrada para este período.</p>
             </div>
           ) : (
-            weeks.map((week, index) => {
-              const isCompleted = week.status?.toLowerCase() === 'completed';
-              const isUpcoming = week.status?.toLowerCase() === 'upcoming';
-
-              return (
-                <div
-                  key={week.id}
-                  className={`group relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 p-6 rounded-xl border shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-200 ${isCompleted
-                    ? 'bg-[#f9fafb] dark:bg-[#161e2c] border-[#e5e7eb] dark:border-[#2a3441] opacity-75 hover:opacity-100'
-                    : 'bg-white dark:bg-[#1A2230] border-[#e5e7eb] dark:border-[#2a3441]'
-                    }`}
-                >
-                  <div className="flex items-start gap-5">
-                    <div
-                      className={`flex-shrink-0 flex flex-col items-center justify-center w-16 h-16 rounded-lg border ${isCompleted
-                        ? 'bg-gray-200 dark:bg-gray-800 text-gray-500 border-transparent'
-                        : isUpcoming
-                          ? 'bg-primary/10 text-primary border-primary/20'
-                          : 'bg-[#f0f2f4] dark:bg-[#232d3d] text-[#616f89] dark:text-[#9ca3af] border-transparent'
-                        }`}
-                    >
-                      {isCompleted ? (
-                        <span className="material-symbols-outlined text-2xl">check</span>
-                      ) : (
-                        <>
-                          <span className="text-xs font-bold uppercase tracking-wider">Week</span>
-                          <span className="text-2xl font-black">{String(index + 1).padStart(2, '0')}</span>
-                        </>
-                      )}
+            <>
+              {/* Current Week - Highlighted at Top */}
+              {suggestedWeekId && weeks.find(w => w.id === suggestedWeekId) && (() => {
+                const currentWeek = weeks.find(w => w.id === suggestedWeekId)!;
+                const currentIndex = weeks.findIndex(w => w.id === suggestedWeekId);
+                return (
+                  <div
+                    key={currentWeek.id}
+                    className="group relative flex flex-col p-8 rounded-2xl border-2 border-primary bg-gradient-to-br from-primary/10 via-primary/5 to-transparent dark:from-primary/20 dark:via-primary/10 shadow-lg ring-4 ring-primary/20 mb-6"
+                  >
+                    {/* Large Badge */}
+                    <div className="absolute -top-4 left-6 px-4 py-2 bg-primary text-white text-sm font-bold rounded-full shadow-lg flex items-center gap-2">
+                      <span className="material-symbols-outlined">today</span>
+                      SEMANA ATUAL
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        {getStatusBadge(week.status)}
-                        <span className="text-sm text-[#616f89] dark:text-[#9ca3af]">{week.date_range}</span>
+
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mt-4">
+                      <div className="flex items-start gap-6">
+                        {/* Large Week Number */}
+                        <div className="flex-shrink-0 flex flex-col items-center justify-center w-24 h-24 rounded-xl bg-primary text-white shadow-md">
+                          <span className="text-xs font-bold uppercase tracking-wider opacity-80">Semana</span>
+                          <span className="text-4xl font-black">{String(currentIndex + 1).padStart(2, '0')}</span>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <span className="text-lg font-semibold text-primary">{currentWeek.date_range}</span>
+                          <h3 className="text-2xl font-black text-[#111318] dark:text-white">
+                            {currentWeek.label}
+                          </h3>
+                          <p className="text-base text-[#616f89] dark:text-[#9ca3af]">{currentWeek.theme}</p>
+                        </div>
                       </div>
-                      <h3
-                        className={`text-xl font-bold group-hover:text-primary transition-colors ${isCompleted ? 'text-gray-500 dark:text-gray-400' : 'text-[#111318] dark:text-white'
+
+                      {/* Start Meeting Button - Direct */}
+                      <div className="w-full sm:w-auto">
+                        <button
+                          onClick={() => handleStartMeeting(currentWeek.id, 'midweek')}
+                          disabled={creatingMeeting}
+                          className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 text-lg font-bold rounded-xl shadow-lg text-white bg-primary hover:bg-blue-700 transition-all disabled:opacity-50"
+                        >
+                          {creatingMeeting ? (
+                            <span className="material-symbols-outlined animate-spin text-2xl">progress_activity</span>
+                          ) : (
+                            <span className="material-symbols-outlined text-2xl">play_circle</span>
+                          )}
+                          {creatingMeeting ? 'Criando...' : 'Iniciar Reunião'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Other Weeks */}
+              <h3 className="text-lg font-bold text-gray-500 dark:text-gray-400 mt-4 mb-3">Outras Semanas</h3>
+              {weeks.filter(w => w.id !== suggestedWeekId).map((week, index) => {
+                const isCompleted = week.status?.toLowerCase() === 'completed';
+                const isUpcoming = week.status?.toLowerCase() === 'upcoming';
+                const originalIndex = weeks.findIndex(w => w.id === week.id);
+
+                return (
+                  <div
+                    key={week.id}
+                    className={`group relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 p-6 rounded-xl border shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-200 ${isCompleted
+                      ? 'bg-[#f9fafb] dark:bg-[#161e2c] border-[#e5e7eb] dark:border-[#2a3441] opacity-75 hover:opacity-100'
+                      : 'bg-white dark:bg-[#1A2230] border-[#e5e7eb] dark:border-[#2a3441]'
+                      }`}
+                  >
+                    <div className="flex items-start gap-5">
+                      <div
+                        className={`flex-shrink-0 flex flex-col items-center justify-center w-16 h-16 rounded-lg border ${isCompleted
+                          ? 'bg-gray-200 dark:bg-gray-800 text-gray-500 border-transparent'
+                          : isUpcoming
+                            ? 'bg-primary/10 text-primary border-primary/20'
+                            : 'bg-[#f0f2f4] dark:bg-[#232d3d] text-[#616f89] dark:text-[#9ca3af] border-transparent'
                           }`}
                       >
-                        {week.label}
-                      </h3>
-                      <p className="text-sm text-[#616f89] dark:text-[#9ca3af] line-clamp-1">{week.theme}</p>
+                        {isCompleted ? (
+                          <span className="material-symbols-outlined text-2xl">check</span>
+                        ) : (
+                          <>
+                            <span className="text-xs font-bold uppercase tracking-wider">Week</span>
+                            <span className="text-2xl font-black">{String(originalIndex + 1).padStart(2, '0')}</span>
+                          </>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          {getStatusBadge(week.status)}
+                          <span className="text-sm text-[#616f89] dark:text-[#9ca3af]">{week.date_range}</span>
+                        </div>
+                        <h3
+                          className={`text-xl font-bold group-hover:text-primary transition-colors ${isCompleted ? 'text-gray-500 dark:text-gray-400' : 'text-[#111318] dark:text-white'
+                            }`}
+                        >
+                          {week.label}
+                        </h3>
+                        <p className="text-sm text-[#616f89] dark:text-[#9ca3af] line-clamp-1">{week.theme}</p>
+                      </div>
+                    </div>
+                    <div className="w-full sm:w-auto mt-2 sm:mt-0">
+                      {isCompleted ? (
+                        <button
+                          onClick={() => navigate('/report')}
+                          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 border border-[#dbdfe6] dark:border-[#4b5563] text-base font-medium rounded-lg shadow-sm text-[#616f89] bg-white dark:bg-[#232d3d] dark:text-white hover:bg-[#f0f2f4] dark:hover:bg-[#2a3441] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition-all"
+                        >
+                          <span className="material-symbols-outlined">visibility</span>
+                          Ver Relatório
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleStartMeeting(week.id, 'midweek')}
+                          disabled={creatingMeeting}
+                          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-primary hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all active:scale-95 disabled:opacity-50"
+                        >
+                          <span className="material-symbols-outlined">play_arrow</span>
+                          Iniciar Reunião
+                        </button>
+                      )}
                     </div>
                   </div>
-                  <div className="w-full sm:w-auto mt-2 sm:mt-0">
-                    {isCompleted ? (
-                      <button
-                        onClick={() => navigate('/report')}
-                        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 border border-[#dbdfe6] dark:border-[#4b5563] text-base font-medium rounded-lg shadow-sm text-[#616f89] bg-white dark:bg-[#232d3d] dark:text-white hover:bg-[#f0f2f4] dark:hover:bg-[#2a3441] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition-all"
-                      >
-                        <span className="material-symbols-outlined">visibility</span>
-                        Ver Relatório
-                      </button>
-                    ) : selectingDayForWeek === week.id ? (
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        <button
-                          onClick={() => handleStartMeeting(week.id, 'Tuesday')}
-                          disabled={creatingMeeting}
-                          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-primary hover:bg-blue-700 transition-all disabled:opacity-50"
-                        >
-                          Terça
-                        </button>
-                        <button
-                          onClick={() => handleStartMeeting(week.id, 'Wednesday')}
-                          disabled={creatingMeeting}
-                          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-primary hover:bg-blue-700 transition-all disabled:opacity-50"
-                        >
-                          Quarta
-                        </button>
-                        <button
-                          onClick={() => setSelectingDayForWeek(null)}
-                          className="px-3 py-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                        >
-                          <span className="material-symbols-outlined text-xl">close</span>
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setSelectingDayForWeek(week.id)}
-                        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-primary hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all active:scale-95"
-                      >
-                        <span className="material-symbols-outlined">play_arrow</span>
-                        Iniciar Reunião
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })
+                );
+              })}
+            </>
           )}
         </div>
       </main>

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { MEETING_SECTIONS, SECTION_COLORS, SectionKey } from '../lib/meetingTemplate';
+import html2canvas from 'html2canvas';
 
 interface AgendaItem {
   id: string;
@@ -11,6 +12,7 @@ interface AgendaItem {
   position: number;
   status: string;
   section: SectionKey;
+  assigned_names?: string;
 }
 
 interface MeetingData {
@@ -19,6 +21,7 @@ interface MeetingData {
   started_at: string;
   finished_at: string;
   total_duration_seconds: number;
+  president?: string;
   week?: {
     label: string;
     date_range: string;
@@ -37,6 +40,8 @@ const MeetingReport: React.FC = () => {
   const [attendance, setAttendance] = useState(0);
   const [commentsCount, setCommentsCount] = useState(0);
   const [commentsTotalSeconds, setCommentsTotalSeconds] = useState(0);
+  const [exporting, setExporting] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const meetingId = localStorage.getItem('active_meeting_id');
@@ -57,7 +62,8 @@ const MeetingReport: React.FC = () => {
           started_at,
           finished_at,
           total_duration_seconds,
-          week_id
+          week_id,
+          president
         `)
         .eq('id', meetingId)
         .single();
@@ -86,7 +92,7 @@ const MeetingReport: React.FC = () => {
       // Fetch agenda items
       const { data: agendaData, error: agendaError } = await supabase
         .from('agenda_items')
-        .select('id, title, estimated_minutes, actual_seconds, position, status, section')
+        .select('id, title, estimated_minutes, actual_seconds, position, status, section, assigned_names')
         .eq('meeting_id', meetingId)
         .order('position', { ascending: true });
 
@@ -153,6 +159,30 @@ const MeetingReport: React.FC = () => {
     return getTotalActual() - getTotalEstimated();
   };
 
+  const handleExportImage = async () => {
+    if (!reportRef.current) return;
+
+    setExporting(true);
+    try {
+      const canvas = await html2canvas(reportRef.current, {
+        backgroundColor: '#f8fafc',
+        scale: 2,
+        useCORS: true,
+        logging: false
+      });
+
+      const link = document.createElement('a');
+      link.download = `relatorio-reuniao-${meeting?.week?.label || 'N/A'}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (error) {
+      console.error('Error exporting image:', error);
+      alert('Erro ao exportar imagem.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="bg-background-light dark:bg-background-dark text-[#111318] dark:text-white font-display h-screen flex items-center justify-center">
@@ -185,7 +215,7 @@ const MeetingReport: React.FC = () => {
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col items-center py-8 px-4 sm:px-6 lg:px-8">
-          <div className="layout-content-container flex flex-col max-w-[1000px] w-full flex-1 gap-6">
+          <div ref={reportRef} className="layout-content-container flex flex-col max-w-[1000px] w-full flex-1 gap-6">
             {/* Page Heading */}
             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 bg-white dark:bg-[#1e293b] p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
               <div className="flex flex-col gap-2">
@@ -196,8 +226,27 @@ const MeetingReport: React.FC = () => {
                 <p className="text-[#616f89] dark:text-gray-400 text-base font-normal leading-normal">
                   {meeting?.week?.theme || 'Reunião do Meio de Semana'}
                 </p>
+                {meeting?.president && (
+                  <p className="text-[#111318] dark:text-white text-lg font-bold mt-2 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-primary">person_celebrate</span>
+                    Presidente: {meeting.president}
+                  </p>
+                )}
               </div>
               <div className="flex gap-3">
+                {/* Export Button */}
+                <button
+                  onClick={handleExportImage}
+                  disabled={exporting}
+                  className="flex cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-sm font-bold transition-colors"
+                >
+                  {exporting ? (
+                    <span className="material-symbols-outlined animate-spin text-[18px] mr-2">progress_activity</span>
+                  ) : (
+                    <span className="material-symbols-outlined text-[18px] mr-2">download</span>
+                  )}
+                  <span className="truncate">{exporting ? 'Exportando...' : 'Exportar Imagem'}</span>
+                </button>
                 <button
                   onClick={() => {
                     localStorage.removeItem('active_meeting_id');
@@ -325,6 +374,11 @@ const MeetingReport: React.FC = () => {
                                 </td>
                                 <td className="px-6 py-4">
                                   <p className="text-[#111318] dark:text-gray-200 text-sm font-medium leading-normal">{item.title}</p>
+                                  {item.assigned_names && (
+                                    <p className="text-primary dark:text-blue-400 text-xs mt-1 font-medium">
+                                      ({item.assigned_names})
+                                    </p>
+                                  )}
                                 </td>
                                 <td className="px-6 py-4">
                                   <p className="text-[#616f89] dark:text-gray-400 text-sm font-medium tabular-nums">{item.estimated_minutes}m 00s</p>

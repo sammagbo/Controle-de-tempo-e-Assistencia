@@ -13,6 +13,7 @@ import { parseMeetingPDF } from '../lib/pdfParser';
 
 interface SetupItem extends MeetingPart {
   customTitle?: string;
+  assignedNames?: string;
 }
 
 const SetupSession: React.FC = () => {
@@ -24,6 +25,7 @@ const SetupSession: React.FC = () => {
     DEFAULT_MEETING_TEMPLATE.map(item => ({ ...item }))
   );
   const [selectedDay, setSelectedDay] = useState('Tuesday');
+  const [presidentName, setPresidentName] = useState('');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -205,6 +207,12 @@ const SetupSession: React.FC = () => {
     ));
   };
 
+  const handleNamesChange = (id: string, names: string) => {
+    setItems(prev => prev.map(item =>
+      item.id === id ? { ...item, assignedNames: names } : item
+    ));
+  };
+
   const handleAddItem = (section: SectionKey) => {
     const newItem: SetupItem = {
       id: `custom-${Date.now()}`,
@@ -235,6 +243,18 @@ const SetupSession: React.FC = () => {
 
     setSaving(true);
     try {
+      // Salvar presidente na reunião
+      if (presidentName.trim()) {
+        const { error: meetingError } = await supabase
+          .from('meetings')
+          .update({ president: presidentName })
+          .eq('id', meetingId);
+
+        if (meetingError) {
+          console.error('Error updating meeting president:', meetingError);
+        }
+      }
+
       const agendaItems = items.map((item, index) => ({
         meeting_id: meetingId,
         title: item.title,
@@ -245,6 +265,7 @@ const SetupSession: React.FC = () => {
         section: item.section,
         allows_comments: item.allowsComments,
         requires_post_comment: item.requiresPostComment,
+        assigned_names: item.assignedNames || '',
       }));
 
       const { error } = await supabase
@@ -325,18 +346,22 @@ const SetupSession: React.FC = () => {
           </p>
         </div>
 
-        {/* Day Selector */}
-        <div className="flex flex-col gap-3 mb-8">
-          <label className="text-[#111318] dark:text-white text-sm font-bold">Dia da Reunião</label>
-          <div className="flex h-12 w-full max-w-sm items-center justify-center rounded-lg bg-[#f0f2f4] dark:bg-gray-800 p-1">
-            <label className={`flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-md px-2 ${selectedDay === 'Tuesday' ? 'bg-white dark:bg-primary shadow-[0_1px_3px_rgba(0,0,0,0.1)]' : ''} transition-all`}>
-              <span className={`text-sm font-semibold ${selectedDay === 'Tuesday' ? 'text-[#111318] dark:text-white' : 'text-[#616f89] dark:text-gray-400'}`}>Terça</span>
-              <input type="radio" name="day-selector" value="Tuesday" checked={selectedDay === 'Tuesday'} onChange={() => setSelectedDay('Tuesday')} className="invisible w-0" />
-            </label>
-            <label className={`flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-md px-2 ${selectedDay === 'Wednesday' ? 'bg-white dark:bg-primary shadow-[0_1px_3px_rgba(0,0,0,0.1)]' : ''} transition-all`}>
-              <span className={`text-sm font-semibold ${selectedDay === 'Wednesday' ? 'text-[#111318] dark:text-white' : 'text-[#616f89] dark:text-gray-400'}`}>Quarta</span>
-              <input type="radio" name="day-selector" value="Wednesday" checked={selectedDay === 'Wednesday'} onChange={() => setSelectedDay('Wednesday')} className="invisible w-0" />
-            </label>
+        {/* President Input */}
+        <div className="mb-8">
+          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+            Presidente da Reunião
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              value={presidentName}
+              onChange={(e) => setPresidentName(e.target.value)}
+              placeholder="Nome do Presidente (ex: Rafael)"
+              className="w-full bg-white dark:bg-surface-dark border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 pl-10 text-[#111318] dark:text-white placeholder-gray-400 focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+            />
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+              person_celebrate
+            </span>
           </div>
         </div>
 
@@ -372,7 +397,7 @@ const SetupSession: React.FC = () => {
                         </span>
                       </div>
 
-                      {/* Title */}
+                      {/* Title & Names */}
                       <div className="flex-1 min-w-0">
                         <input
                           type="text"
@@ -380,6 +405,13 @@ const SetupSession: React.FC = () => {
                           placeholder="Digite o título..."
                           value={item.title}
                           onChange={(e) => handleTitleChange(item.id, e.target.value)}
+                        />
+                        <input
+                          type="text"
+                          className="w-full bg-transparent border-none p-0 text-primary text-xs focus:ring-0 placeholder-gray-300 mt-1"
+                          placeholder="Designado(s): ex. Fulano / Ciclano"
+                          value={item.assignedNames || ''}
+                          onChange={(e) => handleNamesChange(item.id, e.target.value)}
                         />
                       </div>
 
