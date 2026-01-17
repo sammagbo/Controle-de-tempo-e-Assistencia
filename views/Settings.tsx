@@ -1,11 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabaseClient';
+import { generateMonthlyReportPDF, getAvailableMonths } from '../lib/monthlyReport';
+import { setupAutoSync, getQueueSize } from '../lib/offlineSync';
 
 const Settings: React.FC = () => {
       const navigate = useNavigate();
       const [exporting, setExporting] = useState(false);
+      const [availableMonths, setAvailableMonths] = useState<{ year: number; month: number; label: string }[]>([]);
+      const [selectedMonth, setSelectedMonth] = useState<string>('');
+      const [generatingReport, setGeneratingReport] = useState(false);
+      const [queueSize, setQueueSize] = useState(0);
+
+      useEffect(() => {
+            // Load available months for report
+            getAvailableMonths().then(months => {
+                  setAvailableMonths(months);
+                  if (months.length > 0) {
+                        setSelectedMonth(`${months[0].year}-${months[0].month}`);
+                  }
+            });
+
+            // Check offline queue size
+            setQueueSize(getQueueSize());
+
+            // Setup auto-sync when back online
+            const cleanup = setupAutoSync((result) => {
+                  if (result.success > 0) {
+                        alert(`Sincronizado ${result.success} ações pendentes!`);
+                  }
+                  setQueueSize(getQueueSize());
+            });
+
+            return cleanup;
+      }, []);
+
+      const handleGenerateMonthlyReport = async () => {
+            if (!selectedMonth) return;
+            setGeneratingReport(true);
+            try {
+                  const [year, month] = selectedMonth.split('-').map(Number);
+                  await generateMonthlyReportPDF(year, month);
+            } catch (error) {
+                  console.error('Error generating report:', error);
+                  alert('Erro ao gerar relatório');
+            } finally {
+                  setGeneratingReport(false);
+            }
+      };
 
       const handleExportData = async () => {
             try {
@@ -201,8 +244,78 @@ const Settings: React.FC = () => {
                               </div>
                         </div>
 
+                        {/* Monthly Report Section */}
+                        <div className="bg-white dark:bg-[#1e293b] p-8 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                              <div className="flex items-start gap-6">
+                                    <div className="p-4 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-2xl">
+                                          <span className="material-symbols-outlined text-4xl">summarize</span>
+                                    </div>
+                                    <div className="flex-1">
+                                          <h2 className="text-xl font-bold mb-2">Relatório Mensal</h2>
+                                          <p className="text-gray-600 dark:text-gray-300 mb-4">
+                                                Gere um PDF com resumo de assistência e reuniões de um mês específico.
+                                          </p>
+
+                                          <div className="flex items-center gap-4 mb-4">
+                                                <select
+                                                      value={selectedMonth}
+                                                      onChange={(e) => setSelectedMonth(e.target.value)}
+                                                      className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-[#111318] dark:text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
+                                                >
+                                                      {availableMonths.length === 0 ? (
+                                                            <option value="">Nenhum mês disponível</option>
+                                                      ) : (
+                                                            availableMonths.map((m) => (
+                                                                  <option key={`${m.year}-${m.month}`} value={`${m.year}-${m.month}`}>
+                                                                        {m.label}
+                                                                  </option>
+                                                            ))
+                                                      )}
+                                                </select>
+                                                <button
+                                                      onClick={handleGenerateMonthlyReport}
+                                                      disabled={generatingReport || !selectedMonth}
+                                                      className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold transition-all disabled:opacity-50"
+                                                >
+                                                      {generatingReport ? (
+                                                            <>
+                                                                  <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                                                                  <span>Gerando...</span>
+                                                            </>
+                                                      ) : (
+                                                            <>
+                                                                  <span className="material-symbols-outlined">picture_as_pdf</span>
+                                                                  <span>Gerar PDF</span>
+                                                            </>
+                                                      )}
+                                                </button>
+                                          </div>
+
+                                          <p className="text-sm text-gray-500 flex items-center gap-2">
+                                                <span className="material-symbols-outlined text-lg">info</span>
+                                                Inclui: total de reuniões, média de assistência, detalhes por data.
+                                          </p>
+                                    </div>
+                              </div>
+                        </div>
+
+                        {/* Offline Sync Status */}
+                        {queueSize > 0 && (
+                              <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border border-amber-200 dark:border-amber-700 flex items-center gap-4">
+                                    <span className="material-symbols-outlined text-amber-600 text-3xl">cloud_off</span>
+                                    <div className="flex-1">
+                                          <p className="font-bold text-amber-800 dark:text-amber-200">
+                                                {queueSize} ações pendentes
+                                          </p>
+                                          <p className="text-sm text-amber-600 dark:text-amber-400">
+                                                Serão sincronizadas automaticamente quando você estiver online.
+                                          </p>
+                                    </div>
+                              </div>
+                        )}
+
                         <div className="text-center text-sm text-gray-400 mt-12">
-                              <p>MeetingManager v1.1 • Banco de Dados Conectado</p>
+                              <p>MeetingManager v1.2 • Banco de Dados Conectado</p>
                         </div>
 
                   </main>

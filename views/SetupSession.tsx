@@ -10,6 +10,7 @@ import {
   getTotalEstimatedMinutes
 } from '../lib/meetingTemplate';
 import { parseMeetingPDF } from '../lib/pdfParser';
+import { parseWorkbookFile } from '../lib/htmlParser';
 import {
   DndContext,
   closestCenter,
