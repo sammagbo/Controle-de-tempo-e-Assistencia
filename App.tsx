@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/AuthContext';
 import Dashboard from './views/Dashboard';
@@ -12,6 +12,7 @@ import Statistics from './views/Statistics';
 import Settings from './views/Settings';
 import Login from './views/Login';
 import MeetingHistory from './views/MeetingHistory';
+import LoadingScreen from './components/LoadingScreen';
 
 // Protected Route wrapper
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -52,11 +53,32 @@ const AppRoutes: React.FC = () => {
 };
 
 const App: React.FC = () => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [showApp, setShowApp] = useState(false);
+
+  useEffect(() => {
+    // Check if this is the first visit in this session
+    const hasSeenLoading = sessionStorage.getItem('meetingmanager_loaded');
+    if (hasSeenLoading) {
+      setIsLoading(false);
+      setShowApp(true);
+    }
+  }, []);
+
+  const handleLoadingComplete = () => {
+    sessionStorage.setItem('meetingmanager_loaded', 'true');
+    setIsLoading(false);
+    setTimeout(() => setShowApp(true), 100);
+  };
+
   return (
     <AuthProvider>
-      <HashRouter>
-        <AppRoutes />
-      </HashRouter>
+      {isLoading && <LoadingScreen onComplete={handleLoadingComplete} minDuration={3500} />}
+      {showApp && (
+        <HashRouter>
+          <AppRoutes />
+        </HashRouter>
+      )}
     </AuthProvider>
   );
 };
