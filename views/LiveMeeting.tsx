@@ -69,23 +69,29 @@ const LiveMeeting: React.FC = () => {
     let interval: any;
 
     if (isRunning) {
-      // Ensure we have a start time
+      // Defined outside loop to handle init, but updated inside loop
       let startTime = parseInt(localStorage.getItem('timer_start_timestamp') || '0');
       let baseSeconds = parseInt(localStorage.getItem('timer_base_seconds') || '0');
 
       if (!startTime) {
-        // First start or recovery failed, set current state
         startTime = Date.now();
         baseSeconds = totalSeconds;
         localStorage.setItem('timer_start_timestamp', startTime.toString());
         localStorage.setItem('timer_base_seconds', baseSeconds.toString());
       }
 
-      // Update immediately
       const updateTimer = () => {
+        // Read fresh values to handle hot-swaps (Next/Jump)
+        const currentStart = parseInt(localStorage.getItem('timer_start_timestamp') || '0');
+        const currentBase = parseInt(localStorage.getItem('timer_base_seconds') || '0');
+
+        // If values are missing/invalid (cleared), use local fallback or stop
+        if (!currentStart) return;
+
         const now = Date.now();
-        const elapsed = Math.floor((now - startTime) / 1000);
-        const newTotal = baseSeconds + elapsed;
+        const elapsed = Math.floor((now - currentStart) / 1000);
+        const newTotal = currentBase + elapsed;
+
         setTotalSeconds(newTotal);
         timerRef.current = newTotal;
       };

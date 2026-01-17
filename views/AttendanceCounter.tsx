@@ -105,6 +105,11 @@ const AttendanceCounter: React.FC = () => {
     } else if (data) {
       setHistory([data as AttendanceRecord, ...history]);
       setLastSavedAt(data.created_at);
+
+      // If we are in an active meeting context, return to it
+      if (activeMeetingId) {
+        navigate('/live');
+      }
     }
     setSaving(false);
   };
