@@ -75,7 +75,7 @@ const SortableItem: React.FC<SortableItemProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group bg-white dark:bg-surface-dark"
+      className="flex items-center gap-2 sm:gap-4 px-2 sm:px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group bg-white dark:bg-surface-dark"
     >
       {/* Drag Handle */}
       <button
@@ -113,7 +113,7 @@ const SortableItem: React.FC<SortableItemProps> = ({
       </div>
 
       {/* Duration */}
-      <div className="flex items-center gap-2 flex-shrink-0">
+      <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
         <span className="material-symbols-outlined text-gray-400 text-lg">schedule</span>
         <input
           type="number"
@@ -125,7 +125,7 @@ const SortableItem: React.FC<SortableItemProps> = ({
       </div>
 
       {/* Comment Indicators */}
-      <div className="flex items-center gap-1 flex-shrink-0">
+      <div className="hidden sm:flex items-center gap-1 flex-shrink-0">
         <button
           onClick={() => onToggleAllowsComments(item.id)}
           className={`size-8 flex items-center justify-center rounded-full transition-colors ${item.allowsComments ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 'text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
