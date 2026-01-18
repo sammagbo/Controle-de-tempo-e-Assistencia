@@ -102,7 +102,10 @@ const Login: React.FC = () => {
 
                               <div className="mt-6 text-center">
                                     <button
-                                          onClick={() => setIsSignUp(!isSignUp)}
+                                          onClick={() => {
+                                                setIsSignUp(!isSignUp);
+                                                setError(null);
+                                          }}
                                           className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
                                     >
                                           {isSignUp ? 'Já tem uma conta? Entrar' : 'Não tem conta? Criar uma'}

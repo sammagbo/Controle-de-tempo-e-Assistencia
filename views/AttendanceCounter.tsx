@@ -22,6 +22,7 @@ const AttendanceCounter: React.FC = () => {
   const [savedPresencial, setSavedPresencial] = useState(0);
   const [savedZoom, setSavedZoom] = useState(0);
   const [editMode, setEditMode] = useState(false);
+  const [savedSuccess, setSavedSuccess] = useState(false);
 
   const total = presencial + zoom;
 
@@ -88,7 +89,7 @@ const AttendanceCounter: React.FC = () => {
         meeting_id: activeMeetingId || null,
         presencial,
         zoom,
-        count: presencial + zoom  // Include total count for compatibility
+        count: presencial + zoom
       })
       .select('id, presencial, zoom, count, created_at')
       .single();
@@ -104,20 +105,24 @@ const AttendanceCounter: React.FC = () => {
       if (oldData) {
         setHistory([{ ...oldData, presencial: total, zoom: 0 } as any, ...history]);
         setLastSavedAt(oldData.created_at);
+        setSavedPresencial(presencial);
+        setSavedZoom(zoom);
+        setSavedSuccess(true);
       } else {
         alert('Erro ao salvar.');
       }
     } else if (data) {
       setHistory([data as AttendanceRecord, ...history]);
       setLastSavedAt(data.created_at);
-
-      // If we are in an active meeting context (by ID or active timer), return to live
-      if (activeMeetingId || activeTimer) {
-        navigate('/live');
-      } else {
-        alert('Assistência salva com sucesso!');
-      }
+      setSavedPresencial(data.presencial);
+      setSavedZoom(data.zoom);
+      setSavedSuccess(true);
     }
+
+    setTimeout(() => {
+      setSavedSuccess(false);
+    }, 2000);
+
     setSaving(false);
   };
 
@@ -242,15 +247,17 @@ const AttendanceCounter: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-center gap-4 mt-4">
             <button
               onClick={saveAttendance}
-              disabled={saving}
-              className="flex items-center gap-3 px-8 py-4 bg-primary hover:bg-blue-600 text-white rounded-2xl font-bold text-lg shadow-lg transition-all active:scale-95 disabled:opacity-50"
+              disabled={saving || savedSuccess}
+              className={`flex items-center gap-3 px-8 py-4 ${savedSuccess ? 'bg-green-600' : 'bg-primary hover:bg-blue-600'} text-white rounded-2xl font-bold text-lg shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:scale-100`}
             >
               {saving ? (
                 <span className="material-symbols-outlined animate-spin">progress_activity</span>
+              ) : savedSuccess ? (
+                <span className="material-symbols-outlined">check_circle</span>
               ) : (
                 <span className="material-symbols-outlined">save</span>
               )}
-              <span>{saving ? 'Salvando...' : 'Salvar'}</span>
+              <span>{saving ? 'Salvando...' : savedSuccess ? 'Salvo!' : 'Salvar'}</span>
             </button>
 
             <button
@@ -265,7 +272,7 @@ const AttendanceCounter: React.FC = () => {
 
             <button
               onClick={() => { setPresencial(0); setZoom(0); setShowZoom(false); }}
-              className="flex items-center gap-2 px-6 py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl font-bold hover:bg-gray-200 transition-colors active:scale-95"
+              className="flex items-center gap-2 px-6 py-3 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-transparent hover:border-red-200 rounded-xl font-bold transition-all active:scale-95"
             >
               <span className="material-symbols-outlined">restart_alt</span>
               <span>Zerar</span>

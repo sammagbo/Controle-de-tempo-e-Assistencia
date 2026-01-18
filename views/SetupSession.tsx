@@ -105,8 +105,8 @@ const SortableItem: React.FC<SortableItemProps> = ({
         />
         <input
           type="text"
-          className="w-full bg-transparent border-none p-0 text-primary text-xs focus:ring-0 placeholder-gray-300 mt-1"
-          placeholder="Designado(s): ex. Fulano / Ciclano"
+          className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-2 py-1.5 text-primary text-sm focus:ring-1 focus:ring-primary focus:border-primary placeholder-gray-400 mt-2 transition-colors"
+          placeholder="Nome do irmão/irmã"
           value={item.assignedNames || ''}
           onChange={(e) => onNamesChange(item.id, e.target.value)}
         />
@@ -117,7 +117,7 @@ const SortableItem: React.FC<SortableItemProps> = ({
         <span className="material-symbols-outlined text-gray-400 text-lg">schedule</span>
         <input
           type="number"
-          className="w-14 bg-transparent border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-center text-sm focus:border-primary focus:ring-1 focus:ring-primary"
+          className="w-16 h-10 sm:h-auto sm:w-14 bg-transparent border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-center text-sm focus:border-primary focus:ring-1 focus:ring-primary"
           value={item.estimatedMinutes}
           onChange={(e) => onDurationChange(item.id, parseInt(e.target.value) || 0)}
         />
@@ -144,10 +144,10 @@ const SortableItem: React.FC<SortableItemProps> = ({
 
         <button
           onClick={() => onDelete(item.id)}
-          className="size-8 flex items-center justify-center rounded-full text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
+          className="size-10 flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
           title="Remover parte"
         >
-          <span className="material-symbols-outlined text-lg">delete</span>
+          <span className="material-symbols-outlined text-xl">delete</span>
         </button>
       </div>
     </div>
