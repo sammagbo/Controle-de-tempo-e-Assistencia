@@ -173,11 +173,27 @@ const AttendanceCounter: React.FC = () => {
         {/* Left: Counter */}
         <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 overflow-y-auto">
           {/* Date */}
-          <div className="mb-6 px-4 py-2 bg-primary/10 rounded-full">
+          <div className="mb-4 px-4 py-2 bg-primary/10 rounded-full">
             <span className="text-primary font-bold">
               {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
             </span>
           </div>
+
+          {/* Mobile-only saved indicator */}
+          {(savedPresencial > 0 || savedZoom > 0) && (
+            <div
+              className="sm:hidden mb-4 px-4 py-2 bg-green-100 dark:bg-green-900/30 rounded-full cursor-pointer active:scale-95 transition-transform"
+              onClick={() => {
+                setPresencial(savedPresencial);
+                setZoom(savedZoom);
+                if (savedZoom > 0) setShowZoom(true);
+              }}
+            >
+              <span className="text-green-600 dark:text-green-400 font-bold text-sm">
+                ✅ Salvo: {savedPresencial + savedZoom} • Toque para editar
+              </span>
+            </div>
+          )}
 
           {/* Presencial Counter - Always Visible */}
           <div
@@ -286,10 +302,10 @@ const AttendanceCounter: React.FC = () => {
           )}
         </main>
 
-        {/* Right Sidebar: Saved Attendance */}
+        {/* Right Sidebar: Saved Attendance - Hidden on mobile */}
         {(savedPresencial > 0 || savedZoom > 0) && (
           <aside
-            className="w-28 sm:w-36 bg-green-50 dark:bg-green-900/20 border-l border-green-200 dark:border-green-800 flex flex-col items-center justify-center p-3 cursor-pointer hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+            className="hidden sm:flex w-28 sm:w-36 bg-green-50 dark:bg-green-900/20 border-l border-green-200 dark:border-green-800 flex-col items-center justify-center p-3 cursor-pointer hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
             onClick={() => {
               setPresencial(savedPresencial);
               setZoom(savedZoom);

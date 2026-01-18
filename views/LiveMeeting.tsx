@@ -483,7 +483,7 @@ const LiveMeeting: React.FC = () => {
       {/* Main Content Area: Split View */}
       <main className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
         {/* Left/Top Panel: Active Item & Timer (Hero Section) */}
-        <section className="flex-1 flex flex-col items-center overflow-y-auto p-4 lg:p-10 relative bg-surface-light dark:bg-surface-dark shadow-sm z-10 lg:border-r border-gray-200 dark:border-gray-800">
+        <section className="min-h-[60vh] lg:min-h-0 flex-1 flex flex-col items-center overflow-y-auto p-4 lg:p-10 relative bg-surface-light dark:bg-surface-dark shadow-sm z-10 lg:border-r border-gray-200 dark:border-gray-800">
           <div className="w-full max-w-3xl flex flex-col items-center gap-8 animate-fade-in">
             {/* Topic Header */}
             <div className="text-center w-full space-y-4">
@@ -604,7 +604,7 @@ const LiveMeeting: React.FC = () => {
         </section>
 
         {/* Right/Bottom Panel: Agenda List */}
-        <aside className="w-full lg:w-[400px] xl:w-[480px] bg-gray-50 dark:bg-[#101622] flex flex-col border-t lg:border-t-0 lg:border-l border-gray-200 dark:border-gray-800 overflow-hidden">
+        <aside className="w-full max-h-[40vh] lg:max-h-none lg:w-[400px] xl:w-[480px] bg-gray-50 dark:bg-[#101622] flex flex-col border-t lg:border-t-0 lg:border-l border-gray-200 dark:border-gray-800 overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-gray-50/80 dark:bg-[#101622]/80 backdrop-blur-sm sticky top-0 z-10">
             <h3 className="text-[#111318] dark:text-white text-lg font-bold">Partes da reunião</h3>
             <span className="text-xs font-semibold px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-300">
