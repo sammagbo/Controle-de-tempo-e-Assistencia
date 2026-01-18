@@ -483,7 +483,7 @@ const LiveMeeting: React.FC = () => {
       {/* Main Content Area: Split View */}
       <main className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
         {/* Left/Top Panel: Active Item & Timer (Hero Section) */}
-        <section className="flex-1 flex flex-col items-center justify-center p-6 lg:p-10 relative bg-surface-light dark:bg-surface-dark shadow-sm z-10 lg:border-r border-gray-200 dark:border-gray-800">
+        <section className="flex-1 flex flex-col items-center overflow-y-auto p-4 lg:p-10 relative bg-surface-light dark:bg-surface-dark shadow-sm z-10 lg:border-r border-gray-200 dark:border-gray-800">
           <div className="w-full max-w-3xl flex flex-col items-center gap-8 animate-fade-in">
             {/* Topic Header */}
             <div className="text-center w-full space-y-4">
@@ -571,31 +571,33 @@ const LiveMeeting: React.FC = () => {
             </div>
 
             {/* Primary Controls */}
-            <div className="flex flex-wrap gap-4 w-full justify-center max-w-[800px] pt-8">
-              <button
-                onClick={handleStart}
-                className={`flex flex-1 min-w-[160px] h-16 cursor-pointer items-center justify-center gap-3 rounded-2xl bg-green-600 hover:bg-green-700 text-white shadow-lg transition-all active:scale-95 ${isRunning ? 'opacity-50 cursor-not-allowed' : ''}`}
-                disabled={isRunning}
-              >
-                <span className="material-symbols-outlined text-[28px]">play_arrow</span>
-                <span className="text-xl font-bold">Iniciar</span>
-              </button>
+            <div className="flex flex-col sm:flex-row gap-3 w-full justify-center max-w-[800px] pt-4 sm:pt-8 pb-8 sm:pb-0">
+              <div className="flex gap-3 w-full sm:w-auto flex-1">
+                <button
+                  onClick={handleStart}
+                  className={`flex flex-1 min-w-0 h-14 sm:h-16 cursor-pointer items-center justify-center gap-2 sm:gap-3 rounded-xl sm:rounded-2xl bg-green-600 hover:bg-green-700 text-white shadow-lg transition-all active:scale-95 ${isRunning ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={isRunning}
+                >
+                  <span className="material-symbols-outlined text-[24px] sm:text-[28px]">play_arrow</span>
+                  <span className="text-lg sm:text-xl font-bold">Iniciar</span>
+                </button>
 
-              <button
-                onClick={handlePause}
-                className={`flex flex-1 min-w-[160px] h-16 cursor-pointer items-center justify-center gap-3 rounded-2xl bg-yellow-500 hover:bg-yellow-600 text-white shadow-lg transition-all active:scale-95 ${!isRunning ? 'opacity-50 cursor-not-allowed' : ''}`}
-                disabled={!isRunning}
-              >
-                <span className="material-symbols-outlined text-[28px]">pause</span>
-                <span className="text-xl font-bold">Pausar</span>
-              </button>
+                <button
+                  onClick={handlePause}
+                  className={`flex flex-1 min-w-0 h-14 sm:h-16 cursor-pointer items-center justify-center gap-2 sm:gap-3 rounded-xl sm:rounded-2xl bg-yellow-500 hover:bg-yellow-600 text-white shadow-lg transition-all active:scale-95 ${!isRunning ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={!isRunning}
+                >
+                  <span className="material-symbols-outlined text-[24px] sm:text-[28px]">pause</span>
+                  <span className="text-lg sm:text-xl font-bold">Pausar</span>
+                </button>
+              </div>
 
               <button
                 onClick={handleNext}
-                className="flex flex-1 min-w-[160px] h-16 cursor-pointer items-center justify-center gap-3 rounded-2xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:opacity-90 transition-all active:scale-95"
+                className="flex flex-1 min-w-0 h-14 sm:h-16 cursor-pointer items-center justify-center gap-2 sm:gap-3 rounded-xl sm:rounded-2xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:opacity-90 transition-all active:scale-95 w-full sm:w-auto"
               >
-                <span className="text-xl font-bold">Próximo</span>
-                <span className="material-symbols-outlined text-[28px]">skip_next</span>
+                <span className="text-lg sm:text-xl font-bold">Próximo</span>
+                <span className="material-symbols-outlined text-[24px] sm:text-[28px]">skip_next</span>
               </button>
             </div>
           </div>
