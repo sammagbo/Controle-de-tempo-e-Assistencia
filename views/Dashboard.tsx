@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { CURRENT_USER } from '../types';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../lib/AuthContext';
-import { syncCalendarFromJwOrg, needsSync } from '../lib/calendarSync';
 import { t } from '../lib/translations';
 
 interface Period {
@@ -30,8 +29,6 @@ const Dashboard: React.FC = () => {
   const [selectingDayForWeek, setSelectingDayForWeek] = useState<string | null>(null);
   const [creatingMeeting, setCreatingMeeting] = useState(false);
   const [suggestedWeekId, setSuggestedWeekId] = useState<string | null>(null);
-  const [syncing, setSyncing] = useState(false);
-  const [syncNeeded, setSyncNeeded] = useState(false);
 
   // Helper function to check if today falls within a week's date range
   const findCurrentWeek = (weeksList: Week[]): string | null => {
@@ -141,34 +138,7 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  // Check if sync is needed on mount
-  useEffect(() => {
-    async function checkCalendar() {
-      const currentLang = localStorage.getItem('jw_lang') || 'pt';
-      const shouldSync = await needsSync(currentLang);
-      setSyncNeeded(shouldSync);
-    }
-    checkCalendar();
-  }, []);
 
-  const handleSync = async () => {
-    setSyncing(true);
-    try {
-      const currentLang = localStorage.getItem('jw_lang') || 'pt';
-      const result = await syncCalendarFromJwOrg(currentLang);
-      if (result.success) {
-        alert(result.message);
-        window.location.reload();
-      } else {
-        alert(result.message);
-      }
-    } catch (error) {
-      console.error('Sync error:', error);
-      alert('Erro ao sincronizar calendário.');
-    } finally {
-      setSyncing(false);
-    }
-  };
 
   // Fetch periods on mount (only periods that have weeks)
   useEffect(() => {
@@ -301,26 +271,7 @@ const Dashboard: React.FC = () => {
               <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>bar_chart</span>
               <span className="text-sm font-medium hidden md:block">Estatísticas</span>
             </button>
-            {/* Sync Calendar Button */}
-            <button
-              onClick={handleSync}
-              disabled={syncing}
-              className={`relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${syncNeeded
-                ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 hover:bg-orange-200'
-                : 'hover:bg-[#f0f2f4] dark:hover:bg-[#2a3441] text-gray-600 dark:text-gray-300'
-                }`}
-              title={syncing ? 'Sincronizando...' : syncNeeded ? 'Sincronizar calendário (recomendado)' : 'Sincronizar calendário'}
-            >
-              {syncing ? (
-                <span className="material-symbols-outlined animate-spin" style={{ fontSize: '20px' }}>sync</span>
-              ) : (
-                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>cloud_sync</span>
-              )}
-              <span className="text-sm font-medium hidden md:block">{syncing ? 'Sincronizando...' : 'Sincronizar'}</span>
-              {syncNeeded && !syncing && (
-                <span className="absolute -top-1 -right-1 size-3 bg-orange-500 rounded-full animate-pulse"></span>
-              )}
-            </button>
+
             {/* History Button */}
             <button
               onClick={() => navigate('/history')}

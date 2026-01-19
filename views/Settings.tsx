@@ -162,53 +162,7 @@ const Settings: React.FC = () => {
 
                   <main className="p-6 max-w-4xl mx-auto space-y-8">
 
-                        {/* Data Sync Section */}
-                        <div className="bg-white dark:bg-[#1e293b] p-8 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-                              <div className="flex items-start gap-6">
-                                    <div className="p-4 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl">
-                                          <span className="material-symbols-outlined text-4xl">sync</span>
-                                    </div>
-                                    <div className="flex-1">
-                                          <h2 className="text-xl font-bold mb-2">Sincronização de Dados (JW.ORG)</h2>
-                                          <p className="text-gray-600 dark:text-gray-300 mb-4">
-                                                Para baixar novos períodos e semanas, execute os comandos abaixo no terminal:
-                                          </p>
 
-                                          <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm mb-4">
-                                                <p className="mb-2"># Sincronizar dados em Português:</p>
-                                                <p className="text-white mb-4">npm run sync:pt</p>
-                                                <p className="mb-2"># Sincronizar dados em Francês:</p>
-                                                <p className="text-white">npm run sync:fr</p>
-                                          </div>
-
-                                          <div className="flex gap-4 mb-4">
-                                                <button
-                                                      onClick={() => {
-                                                            localStorage.setItem('jw_lang', 'pt');
-                                                            window.location.reload();
-                                                      }}
-                                                      className={`px-4 py-2 rounded-full text-sm font-bold transition-all cursor-pointer ${(localStorage.getItem('jw_lang') || 'pt') === 'pt' ? 'bg-blue-100 text-blue-600 ring-2 ring-blue-300' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
-                                                >
-                                                      🇧🇷 Português
-                                                </button>
-                                                <button
-                                                      onClick={() => {
-                                                            localStorage.setItem('jw_lang', 'fr');
-                                                            window.location.reload();
-                                                      }}
-                                                      className={`px-4 py-2 rounded-full text-sm font-bold transition-all cursor-pointer ${localStorage.getItem('jw_lang') === 'fr' ? 'bg-indigo-100 text-indigo-600 ring-2 ring-indigo-300' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
-                                                >
-                                                      🇫🇷 Français
-                                                </button>
-                                          </div>
-
-                                          <p className="text-sm text-amber-600 dark:text-amber-400 flex items-center gap-2">
-                                                <span className="material-symbols-outlined text-lg">info</span>
-                                                A sincronização pelo navegador está desabilitada devido a restrições de segurança (CORS).
-                                          </p>
-                                    </div>
-                              </div>
-                        </div>
 
                         {/* Backup Section */}
                         <div className="bg-white dark:bg-[#1e293b] p-8 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
