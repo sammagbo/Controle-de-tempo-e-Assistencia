@@ -1,114 +1,221 @@
-# 🧭 MeetingManager - Product Strategy
+# MeetingManager — Documento Oficial (v3.0)
 
-> **Documento de referência para todas as decisões de produto**
+## 1. Propósito
 
----
+O **MeetingManager** é um **PWA offline-first**, de **uso individual**, para apoiar a condução da reunião do meio de semana (*Nossa Vida e Ministério Cristão*), permitindo:
 
-## 📌 POSICIONAMENTO
-
-### O que o MeetingManager É
-> Uma ferramenta operacional para condução e registro fiel da reunião do meio de semana, em tempo real.
-
-### O que NÃO é
-- ❌ Sistema administrativo
-- ❌ SaaS corporativo
-- ❌ Plataforma social
-- ❌ Sistema de designações
-
-**Palavra-chave:** *operacional*
+* controle de tempo das partes;
+* controle dos **comentários obrigatórios do presidente** (somente onde se aplica);
+* contagem simples de assistência;
+* registro **manual** dos nomes dos irmãos;
+* geração de **relatório fiel**, humano e cronológico.
 
 ---
 
-## 👤 USUÁRIO-ALVO
+## 2. Usuário-alvo
 
-### Persona Principal
-- Irmão designado para controle do tempo/assistência
+Qualquer irmão que deseje **usar o sistema no próprio dispositivo**, para:
 
-### Contexto de Uso
-- Durante a reunião
-- Sob pressão de tempo
-- Com pouco espaço para erro
-- Muitas vezes em celular ou tablet
+* conduzir a reunião;
+* apoiar o controle de tempo/assistência;
+* treinar/simular;
+* gerar **seu próprio relatório**.
 
----
-
-## 🎯 PROBLEMA QUE RESOLVE
-
-| Antes (manual) | Depois (MeetingManager) |
-|----------------|-------------------------|
-| Cronômetro manual | ⏱️ Tempo das partes |
-| Tempos no papel | 💬 Tempo dos comentários |
-| Conta assistência "na cabeça" | 👥 Assistência simples |
-| Relatório depois, manualmente | 🧾 Relatório automático |
+**Cada usuário é totalmente independente.**
 
 ---
 
-## 🧱 ARQUITETURA (3 CAMADAS)
+## 3. Princípios inegociáveis
 
-### 🥇 Camada 1 — Núcleo Operacional (IMUTÁVEL)
-**Isso NUNCA pode quebrar:**
-- Reunião ao vivo
-- Cronômetro por parte
-- Comentários como tempo
-- Nomes manuais
-- Assistência simples
-- Relatório cronológico
-
-### 🥈 Camada 2 — Persistência (Valor Agregado)
-**Evolução SEM risco:**
-- Histórico de reuniões
-- Exportar PDF depois
-- Revisar reuniões passadas
-- Relatório mensal
-
-⚠️ Sempre **fora do momento ao vivo**
-
-### 🥉 Camada 3 — Conveniência (Opcional)
-**Quando o produto estiver sólido:**
-- Login opcional
-- Backup em nuvem
-- Multi-idioma
-- Tema claro/escuro
-
-📌 Nunca bloqueiam uso, nunca são obrigatórias
+* **Offline-first** (funciona 100% offline após o primeiro uso).
+* **Login existe**, mas **nunca bloqueia** o uso ao vivo (sessão persistente).
+* **Estrutura da reunião já existe no sistema** (global, imutável).
+* **Nenhuma importação de PDF**.
+* **Dados não são compartilhados** entre usuários.
+* **Relatório é a entrega principal**.
 
 ---
 
-## 🗺️ ROADMAP (12-18 MESES)
+## 4. Estrutura da reunião (global e imutável)
 
-### Fase A — Produto Correto (AGORA)
-- [x] Ajustar modelo de comentários
-- [x] Simplificar assistência
-- [ ] Corrigir relatório
-- [x] Cortar complexidade desnecessária
-- **Resultado:** Ferramenta confiável
+A estrutura oficial da reunião **já está no sistema** e é igual no mundo todo.
+O usuário **não cria, não edita e não reordena** a estrutura.
 
-### Fase B — Produto Confiável
-- [ ] Histórico por semana
-- [ ] Reabrir relatório antigo
-- [ ] Exportar PDF melhor formatado
-- [ ] Pequenas melhorias de UX
-- **Resultado:** Vira hábito
+A ordem inclui:
 
-### Fase C — Produto Escalável
-- [ ] Login opcional
-- [ ] Perfis simples
-- [ ] Templates por congregação
-- [ ] Backup automático
-- **Resultado:** Produto "instalado" na rotina
+* Cântico e oração iniciais
+* Comentários iniciais
+* Tesouros da Palavra de Deus (cronometrado)
+* Joias Espirituais (cronometrado, **sem comentários separados**)
+* Leitura da Bíblia (cronometrada + **comentário obrigatório do presidente**)
+* Faça Seu Melhor no Ministério (partes de alunos + **comentário obrigatório do presidente após cada parte**)
+* Nossa Vida Cristã
+  * Cântico
+  * Partes intermediárias
+  * Estudo Bíblico da Congregação (30 min, **sem comentários separados**)
+* Comentários finais
+* Cântico final e oração
 
 ---
 
-## 🎯 REGRA DE OURO
+## 5. Cronometragem (regra geral)
 
-> **"Isso ajuda durante a reunião?"**
+* Cronômetro **sempre crescente** (00:00 → ∞).
+* Cada parte tem **tempo previsto**.
+* O cronômetro **nunca para sozinho**.
+* O usuário decide quando parar.
 
-| Resposta | Ação |
-|----------|------|
-| ✅ Sim | Pode entrar |
-| ⏸️ Não, mas útil depois | Talvez depois |
-| ❌ Atrapalha | Não entra |
+### Estados visuais:
+
+* 🟢 Dentro do tempo
+* 🔴 Ultrapassou o tempo (mostrar `+mm:ss`)
+* Se terminar antes: mostrar `−mm:ss`
 
 ---
 
-*Última atualização: 2026-01-18*
+## 6. Comentários do presidente (apenas onde se aplica)
+
+**Existem comentários cronometrados APENAS para:**
+
+* Leitura da Bíblia
+* Todas as partes de alunos em *Faça Seu Melhor no Ministério*
+
+**Não existem comentários cronometrados para:**
+
+* Joias Espirituais
+* Estudo Bíblico da Congregação
+* Cânticos
+* Orações
+* Tesouros da Palavra de Deus
+
+### Regras:
+
+* Comentário é **obrigatório** quando aplicável.
+* Comentário **não tem tempo fixo**.
+* Comentário = **tempo**, sem nomes.
+* Fluxo automático: **parte → comentário → próxima parte**.
+
+---
+
+## 7. Cânticos e orações
+
+* **Não são cronometrados ao vivo**.
+* Aparecem no relatório com **tempo previsto**.
+
+---
+
+## 8. Nomes dos irmãos (100% manuais)
+
+* Cada parte tem um campo manual **"Irmãos / Designados"**.
+* Texto livre.
+* Aceita 0, 1 ou 2 nomes.
+* Editável antes, durante e depois da reunião (até gerar o relatório).
+* Usado **apenas no relatório do usuário**.
+
+---
+
+## 9. Início e término da reunião
+
+* A reunião começa ao clicar em **"Iniciar Reunião"**:
+  * registra o horário atual do dispositivo.
+* A reunião termina ao finalizar a **oração final**:
+  * registra o horário de término.
+* O relatório mostra:
+  * horário de início;
+  * horário de término;
+  * duração total.
+
+---
+
+## 10. Assistência
+
+* **Um único número** por reunião.
+* Incremento por toque.
+* Decremento opcional.
+* Salvo no histórico do usuário.
+* Exibido no relatório.
+
+---
+
+## 11. Comparação tempo previsto × real
+
+* **Não mostrar comparação durante a reunião**.
+* Mostrar no **relatório final**, por parte:
+  * tempo real;
+  * diferença (`+` ou `−`).
+
+---
+
+## 12. Relatório final
+
+* Gerado **manualmente** pelo usuário.
+* Gerado **localmente no dispositivo** (offline).
+* Salvo no histórico do usuário.
+* Exportável (PDF/compartilhamento).
+
+### Formato humano:
+
+```
+Iniciando conversas (Ionara e Laura) – 01:25 (−00:35)
+Conselho: 01:39
+```
+
+Inclui:
+
+* estrutura completa;
+* nomes manuais;
+* tempos reais;
+* diferenças;
+* assistência;
+* dados gerais;
+* horários de início/fim;
+* duração total.
+
+---
+
+## 13. Dados gerais (opcionais)
+
+* Congregação / Local
+* Data exata da reunião
+* Observações gerais
+
+Editáveis a qualquer momento (até gerar o relatório).
+
+---
+
+## 14. Histórico e retenção
+
+* Relatórios salvos por **1 ano**.
+* Relatórios **fixados** ficam por **até 2 anos**.
+* Aviso antes da exclusão:
+  * no app;
+  * por notificação do dispositivo.
+* Exclusão manual pede confirmação.
+
+---
+
+## 15. Login e sincronização
+
+* Login por usuário.
+* Sessão persistente.
+* Dados salvos localmente primeiro.
+* Sincronização automática quando houver internet.
+* Mesmo usuário pode recuperar histórico em outro dispositivo.
+* Reuniões em andamento **não são continuadas** em outro dispositivo.
+
+---
+
+## 16. O que o sistema NÃO é
+
+* Não é colaborativo.
+* Não é oficial.
+* Não importa PDFs.
+* Não compartilha dados entre usuários.
+* Não faz análises durante a reunião.
+* Não impõe cargos ou permissões.
+
+---
+
+## 17. Critério final de sucesso
+
+Dois irmãos podem usar o app simultaneamente, na mesma reunião real, e **cada um gera seu próprio relatório fiel**, sem interferência.

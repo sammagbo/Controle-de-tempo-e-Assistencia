@@ -8,6 +8,7 @@ export interface MeetingPart {
     section: 'abertura' | 'tesouros' | 'ministerio' | 'vida_crista' | 'encerramento';
     allowsComments: boolean;
     requiresPostComment: boolean;
+    skipTiming?: boolean; // v3.0: Cânticos e orações não são cronometrados
 }
 
 export const MEETING_SECTIONS = {
@@ -50,6 +51,7 @@ export const DEFAULT_MEETING_TEMPLATE: MeetingPart[] = [
         section: 'abertura',
         allowsComments: false,
         requiresPostComment: false,
+        skipTiming: true, // v3.0: Não cronometrar
     },
     {
         id: 'abertura-2',
@@ -74,7 +76,7 @@ export const DEFAULT_MEETING_TEMPLATE: MeetingPart[] = [
         title: 'Joias Espirituais',
         estimatedMinutes: 10,
         section: 'tesouros',
-        allowsComments: true, // Parte de perguntas e respostas
+        allowsComments: false, // v3.0: Não tem comentário cronometrado
         requiresPostComment: false,
     },
     {
@@ -123,13 +125,14 @@ export const DEFAULT_MEETING_TEMPLATE: MeetingPart[] = [
         section: 'vida_crista',
         allowsComments: false,
         requiresPostComment: false,
+        skipTiming: true, // v3.0: Não cronometrar
     },
     {
         id: 'vida-crista-2',
         title: 'Parte Local / Necessidades',
         estimatedMinutes: 15,
         section: 'vida_crista',
-        allowsComments: true, // Podem ter perguntas (Opcional)
+        allowsComments: false, // v3.0: Não tem comentário cronometrado
         requiresPostComment: false,
     },
     {
@@ -137,7 +140,7 @@ export const DEFAULT_MEETING_TEMPLATE: MeetingPart[] = [
         title: 'Estudo Bíblico de Congregação',
         estimatedMinutes: 30,
         section: 'vida_crista',
-        allowsComments: true, // Muito interativo
+        allowsComments: false, // v3.0: Não tem comentário cronometrado separado
         requiresPostComment: false,
     },
 
@@ -147,7 +150,7 @@ export const DEFAULT_MEETING_TEMPLATE: MeetingPart[] = [
         title: 'Comentários Finais',
         estimatedMinutes: 3,
         section: 'encerramento',
-        allowsComments: true, // Pode haver breves comentários
+        allowsComments: false, // v3.0: Não tem comentário cronometrado
         requiresPostComment: false,
     },
     {
@@ -157,6 +160,7 @@ export const DEFAULT_MEETING_TEMPLATE: MeetingPart[] = [
         section: 'encerramento',
         allowsComments: false,
         requiresPostComment: false,
+        skipTiming: true, // v3.0: Não cronometrar
     },
 ];
 

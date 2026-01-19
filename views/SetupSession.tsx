@@ -124,23 +124,16 @@ const SortableItem: React.FC<SortableItemProps> = ({
         <span className="text-xs text-gray-500">min</span>
       </div>
 
-      {/* Comment Indicators */}
+      {/* Comment Indicator (read-only) */}
       <div className="flex items-center gap-1 flex-shrink-0">
-        <button
-          onClick={() => onToggleAllowsComments(item.id)}
-          className={`size-8 flex items-center justify-center rounded-full transition-colors ${item.allowsComments ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 'text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-          title={item.allowsComments ? "Desativar comentários" : "Ativar comentários"}
-        >
-          <span className="material-symbols-outlined text-lg">chat_bubble</span>
-        </button>
-
-        <button
-          onClick={() => onToggleRequiresPostComment(item.id)}
-          className={`size-8 flex items-center justify-center rounded-full transition-colors ${item.requiresPostComment ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' : 'text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-          title={item.requiresPostComment ? "Desativar instrutor" : "Ativar instrutor"}
-        >
-          <span className="material-symbols-outlined text-lg">record_voice_over</span>
-        </button>
+        {item.requiresPostComment && (
+          <span
+            className="size-8 flex items-center justify-center rounded-full bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400"
+            title="Requer comentário do presidente"
+          >
+            <span className="material-symbols-outlined text-lg">record_voice_over</span>
+          </span>
+        )}
 
         <button
           onClick={() => onDelete(item.id)}
@@ -508,6 +501,7 @@ const SetupSession: React.FC = () => {
         allows_comments: item.allowsComments,
         requires_post_comment: item.requiresPostComment,
         assigned_names: item.assignedNames || '',
+        skip_timing: item.skipTiming || false, // v3.0: Cânticos não são cronometrados
       }));
 
       const { error } = await supabase

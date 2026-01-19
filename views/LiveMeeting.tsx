@@ -14,6 +14,7 @@ interface LiveAgendaItem {
   allows_comments: boolean;
   requires_post_comment: boolean;
   assigned_names?: string;
+  skip_timing?: boolean; // v3.0: Cânticos não são cronometrados
 }
 
 const LiveMeeting: React.FC = () => {
@@ -91,7 +92,7 @@ const LiveMeeting: React.FC = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('agenda_items')
-        .select('id, title, estimated_minutes, position, status, actual_seconds, section, allows_comments, requires_post_comment')
+        .select('id, title, estimated_minutes, position, status, actual_seconds, section, allows_comments, requires_post_comment, skip_timing')
         .eq('meeting_id', storedMeetingId)
         .order('position', { ascending: true });
 
