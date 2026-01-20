@@ -305,6 +305,18 @@ const LiveMeeting: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isRunning, activeIndex, items.length]);
 
+  // BUGFIX: Force stop timer when meeting is finished
+  const isMeetingFinished = activeIndex >= items.length && items.length > 0;
+
+  useEffect(() => {
+    if (isMeetingFinished && isRunning) {
+      setIsRunning(false);
+      localStorage.removeItem('timer_start_timestamp');
+      localStorage.removeItem('timer_base_seconds');
+      localStorage.removeItem('timer_active_item_id');
+    }
+  }, [isMeetingFinished, isRunning]);
+
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   const pad = (num: number) => num.toString().padStart(2, '0');
