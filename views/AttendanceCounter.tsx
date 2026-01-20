@@ -228,7 +228,7 @@ const AttendanceCounter: React.FC = () => {
           {/* -1 Button for Presencial */}
           <button
             onClick={() => setPresencial(prev => Math.max(0, prev - 1))}
-            className="mb-8 flex items-center gap-2 px-6 py-3 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl font-bold hover:bg-red-200 transition-colors active:scale-95"
+            className="mb-8 flex items-center justify-center gap-2 min-h-12 min-w-12 px-6 py-3 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl font-bold hover:bg-red-200 transition-colors active:scale-95"
           >
             <span className="material-symbols-outlined">remove</span>
             <span>-1</span>
@@ -249,7 +249,7 @@ const AttendanceCounter: React.FC = () => {
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => setZoom(prev => Math.max(0, prev - 1))}
-                  className="p-2 bg-purple-200 dark:bg-purple-800 rounded-lg text-purple-700 dark:text-purple-300 active:scale-95"
+                  className="min-h-12 min-w-12 p-2 bg-purple-200 dark:bg-purple-800 rounded-lg text-purple-700 dark:text-purple-300 active:scale-95 flex items-center justify-center"
                 >
                   <span className="material-symbols-outlined">remove</span>
                 </button>
@@ -262,7 +262,7 @@ const AttendanceCounter: React.FC = () => {
                 />
                 <button
                   onClick={() => setZoom(prev => prev + 1)}
-                  className="p-2 bg-purple-200 dark:bg-purple-800 rounded-lg text-purple-700 dark:text-purple-300 active:scale-95"
+                  className="min-h-12 min-w-12 p-2 bg-purple-200 dark:bg-purple-800 rounded-lg text-purple-700 dark:text-purple-300 active:scale-95 flex items-center justify-center"
                 >
                   <span className="material-symbols-outlined">add</span>
                 </button>

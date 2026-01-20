@@ -1,0 +1,23 @@
+{
+      "name": "Meeting Manager",
+      "short_name": "Meeting",
+      "description": "Gestão de tempo e assistência para reuniões da congregação",
+      "start_url": "/",
+      "display": "standalone",
+      "orientation": "portrait",
+      "background_color": "#ffffff",
+      "theme_color": "#000000",
+      "icons": [
+            {
+                  "src": "/logo.png",
+                  "sizes": "512x512",
+                  "type": "image/png",
+                  "purpose": "any maskable"
+            },
+            {
+                  "src": "/icon.svg",
+                  "sizes": "any",
+                  "type": "image/svg+xml"
+            }
+      ]
+}

@@ -755,13 +755,37 @@ const LiveMeeting: React.FC = () => {
                 </button>
               </div>
 
-              <button
-                onClick={handleNext}
-                className="flex flex-1 min-w-0 h-14 sm:h-16 cursor-pointer items-center justify-center gap-2 sm:gap-3 rounded-xl sm:rounded-2xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:opacity-90 transition-all active:scale-95 w-full sm:w-auto"
-              >
-                <span className="text-lg sm:text-xl font-bold">Próximo</span>
-                <span className="material-symbols-outlined text-[24px] sm:text-[28px]">skip_next</span>
-              </button>
+              {/* Navigation Buttons: Previous & Next/Finish */}
+              <div className="flex gap-3 w-full sm:w-auto">
+                <button
+                  onClick={() => handleJumpToItem(activeIndex - 1)}
+                  disabled={activeIndex === 0 || isCounselMode}
+                  className={`flex flex-1 min-w-0 h-14 sm:h-16 cursor-pointer items-center justify-center gap-2 sm:gap-3 rounded-xl sm:rounded-2xl border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all active:scale-95 ${(activeIndex === 0 || isCounselMode) ? 'opacity-40 cursor-not-allowed' : ''}`}
+                >
+                  <span className="material-symbols-outlined text-[24px] sm:text-[28px]">skip_previous</span>
+                  <span className="text-lg sm:text-xl font-bold">Anterior</span>
+                </button>
+
+                {/* Show big FINALIZAR when on last item, otherwise show Próximo */}
+                {activeIndex === items.length - 1 && !isCounselMode ? (
+                  <button
+                    onClick={finalizeMeeting}
+                    disabled={finalizing}
+                    className="flex flex-1 min-w-0 h-14 sm:h-16 cursor-pointer items-center justify-center gap-2 sm:gap-3 rounded-xl sm:rounded-2xl bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/30 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    <span className="material-symbols-outlined text-[24px] sm:text-[28px]">stop_circle</span>
+                    <span className="text-lg sm:text-xl font-bold">{finalizing ? 'Finalizando...' : 'FINALIZAR'}</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleNext}
+                    className="flex flex-1 min-w-0 h-14 sm:h-16 cursor-pointer items-center justify-center gap-2 sm:gap-3 rounded-xl sm:rounded-2xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:opacity-90 transition-all active:scale-95"
+                  >
+                    <span className="text-lg sm:text-xl font-bold">Próximo</span>
+                    <span className="material-symbols-outlined text-[24px] sm:text-[28px]">skip_next</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </section>

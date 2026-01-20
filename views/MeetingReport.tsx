@@ -193,60 +193,181 @@ const MeetingReport: React.FC = () => {
   const generateTextReport = (): string => {
     if (!meeting) return '';
 
+    const weekLabel = meeting.week?.date_range || meeting.week?.label || 'Reunião';
     const date = meeting.started_at ? new Date(meeting.started_at) : new Date();
     const dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const theme = meeting.week?.theme || 'Reunião do Meio de Semana';
     const startTime = meeting.started_at ? new Date(meeting.started_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
     const endTime = meeting.finished_at ? new Date(meeting.finished_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
 
-    let report = `[${dateStr} / ${theme}]\n`;
-    report += `Assistência: ${attendance.total}\n\n`;
+    let report = `📅 *Reunião: ${weekLabel}*\n\n`;
 
-    // Group items by section
-    const sectionOrder: SectionKey[] = ['tesouros', 'ministerio', 'vida_crista'];
+    // President name (if available)
+    if (meeting.president) {
+      report += `*Presidente: ${meeting.president}*\n`;
+    }
+
+    // Start time
+    report += `*Início - ${startTime}*\n\n`;
+
+    // Attendance section
+    report += `*Assistência ${dateStr}*\n`;
+    report += `Presencial: ${attendance.presencial}\n`;
+    report += `Zoom: ${attendance.zoom}\n`;
+    report += `Total: ${attendance.total}\n\n`;
+
+    // Section mapping
     const sectionNames: Record<SectionKey, string> = {
-      abertura: 'ABERTURA',
-      tesouros: 'TESOUROS',
-      ministerio: 'MINISTÉRIO',
-      vida_crista: 'VIDA CRISTÃ',
-      encerramento: 'ENCERRAMENTO'
+      abertura: 'Abertura',
+      tesouros: 'Tesouros da Palavra de Deus',
+      ministerio: 'Faça Seu Melhor no Ministério',
+      vida_crista: 'Nossa Vida Cristã',
+      encerramento: 'Encerramento'
     };
+
+    // Process each section
+    const sectionOrder: SectionKey[] = ['tesouros', 'ministerio', 'vida_crista'];
 
     sectionOrder.forEach(sectionKey => {
       const sectionItems = agendaItems.filter(item => item.section === sectionKey);
       if (sectionItems.length === 0) return;
 
-      report += `${sectionNames[sectionKey]}\n`;
+      report += `*${sectionNames[sectionKey]}*\n`;
 
       sectionItems.forEach(item => {
-        const emoji = getTimeEmoji(item.actual_seconds || 0, item.estimated_minutes);
-        const actualTime = formatTimeShort(item.actual_seconds || 0);
-        const estimatedTime = formatTimeShort(item.estimated_minutes * 60);
-        const difference = (item.actual_seconds || 0) - (item.estimated_minutes * 60);
-        const diffStr = difference > 0 ? `+${formatTimeShort(difference)}` : `-${formatTimeShort(Math.abs(difference))}`;
+        const actualSeconds = item.actual_seconds || 0;
+        const estimatedSeconds = item.estimated_minutes * 60;
+        const difference = actualSeconds - estimatedSeconds;
 
+        // 🔴 if >30s overtime, 🟢 otherwise
+        const emoji = difference > 30 ? '🔴' : '🟢';
+        const actualTime = formatTimeShort(actualSeconds);
+
+        // Format: Title (Name): Time emoji
         const nameStr = item.assigned_names ? ` (${item.assigned_names})` : '';
 
-        report += `${emoji} ${item.title}${nameStr}: ${actualTime} (${diffStr} vs ${estimatedTime})\n`;
+        // Check if it's a song (Cântico) - no time tracking
+        if (item.title.includes('Cântico')) {
+          report += `${item.title}\n`;
+        } else {
+          report += `${item.title}${nameStr}: ${actualTime} ${emoji}\n`;
+        }
 
         // Add counsel time if exists
         const counselTime = counselTimes[item.id];
         if (counselTime) {
-          report += `   Conselho: ${formatTimeShort(counselTime)}\n`;
+          report += `Conselho: ${formatTimeShort(counselTime)}\n`;
         }
       });
 
       report += '\n';
     });
 
-    // Total duration
-    const totalSeconds = meeting.total_duration_seconds || (getTotalActual() + commentsTotalSeconds);
-    const totalHours = Math.floor(totalSeconds / 3600);
-    const totalMins = Math.floor((totalSeconds % 3600) / 60);
-    report += `Duração Total: ${totalHours.toString().padStart(2, '0')}:${totalMins.toString().padStart(2, '0')}\n`;
-    report += `Início: ${startTime} | Fim: ${endTime}\n`;
+    // End time
+    report += `*FIM DA REUNIÃO: ${endTime}*`;
 
     return report;
+  };
+
+  // Generate WhatsApp-formatted report with exact user format
+  const generateWhatsAppReport = (): string => {
+    if (!meeting) return '';
+
+    const weekLabel = meeting.week?.date_range || meeting.week?.label || 'Reunião';
+    const date = meeting.started_at ? new Date(meeting.started_at) : new Date();
+    const dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const startTime = meeting.started_at ? new Date(meeting.started_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+    const endTime = meeting.finished_at ? new Date(meeting.finished_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+
+    let report = `📅 *Reunião: ${weekLabel}*\n\n`;
+
+    // President name (if available)
+    if (meeting.president) {
+      report += `*Presidente: ${meeting.president}*\n`;
+    }
+
+    // Start time
+    report += `*Início - ${startTime}*\n\n`;
+
+    // Attendance section
+    report += `*Assistência ${dateStr}*\n`;
+    report += `Presencial: ${attendance.presencial}\n`;
+    report += `Zoom: ${attendance.zoom}\n`;
+    report += `Total: ${attendance.total}\n\n`;
+
+    // Section mapping
+    const sectionNames: Record<SectionKey, string> = {
+      abertura: 'Abertura',
+      tesouros: 'Tesouros da Palavra de Deus',
+      ministerio: 'Faça Seu Melhor no Ministério',
+      vida_crista: 'Nossa Vida Cristã',
+      encerramento: 'Encerramento'
+    };
+
+    // Process each section
+    const sectionOrder: SectionKey[] = ['tesouros', 'ministerio', 'vida_crista'];
+
+    sectionOrder.forEach(sectionKey => {
+      const sectionItems = agendaItems.filter(item => item.section === sectionKey);
+      if (sectionItems.length === 0) return;
+
+      report += `*${sectionNames[sectionKey]}*\n`;
+
+      sectionItems.forEach(item => {
+        const actualSeconds = item.actual_seconds || 0;
+        const estimatedSeconds = item.estimated_minutes * 60;
+        const difference = actualSeconds - estimatedSeconds;
+
+        // 🔴 if >30s overtime, 🟢 otherwise
+        const emoji = difference > 30 ? '🔴' : '🟢';
+        const actualTime = formatTimeShort(actualSeconds);
+
+        // Format: *Title* (Name): Time emoji
+        const nameStr = item.assigned_names ? ` (${item.assigned_names})` : '';
+
+        // Check if it's a song (Cântico) - no time tracking
+        if (item.title.includes('Cântico')) {
+          report += `${item.title}\n`;
+        } else {
+          report += `${item.title}${nameStr}: ${actualTime} ${emoji}\n`;
+        }
+
+        // Add counsel time if exists
+        const counselTime = counselTimes[item.id];
+        if (counselTime) {
+          report += `Conselho: ${formatTimeShort(counselTime)}\n`;
+        }
+      });
+
+      report += '\n';
+    });
+
+    // End time
+    report += `*FIM DA REUNIÃO: ${endTime}*`;
+
+    return report;
+  };
+
+  // Share via native share API or WhatsApp fallback
+  const handleShareWhatsApp = async () => {
+    const report = generateWhatsAppReport();
+
+    // Try native share first (works best on mobile)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Relatório da Reunião',
+          text: report
+        });
+        return;
+      } catch (err) {
+        // User cancelled or share failed, fall through to WhatsApp
+        console.log('Native share cancelled, falling back to WhatsApp');
+      }
+    }
+
+    // Fallback to WhatsApp web link
+    const encodedReport = encodeURIComponent(report);
+    window.open(`https://api.whatsapp.com/send?text=${encodedReport}`, '_blank');
   };
 
   // Copy text report to clipboard
@@ -388,6 +509,16 @@ const MeetingReport: React.FC = () => {
                 >
                   <span className="material-symbols-outlined text-[18px] mr-2">{copied ? 'check_circle' : 'content_copy'}</span>
                   <span className="truncate">{copied ? 'Copiado!' : 'Copiar Texto'}</span>
+                </button>
+                {/* WhatsApp Share Button */}
+                <button
+                  onClick={handleShareWhatsApp}
+                  className="flex cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-green-500 hover:bg-green-600 text-white text-sm font-bold transition-colors shadow-sm"
+                >
+                  <svg className="w-[18px] h-[18px] mr-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                  </svg>
+                  <span className="truncate">Compartilhar</span>
                 </button>
                 {/* Export Image Button */}
                 <button
