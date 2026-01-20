@@ -44,6 +44,27 @@ const LiveMeeting: React.FC = () => {
   });
   const timerRef = useRef<number>(0);
 
+  // Counsel Mode State (for hasCounsel parts) - with localStorage persistence
+  const [isCounselMode, setIsCounselMode] = useState(() => {
+    return localStorage.getItem('counsel_mode') === 'true';
+  });
+  const [counselSeconds, setCounselSeconds] = useState(() => {
+    const storedStart = parseInt(localStorage.getItem('counsel_start_timestamp') || '0');
+    const storedBase = parseInt(localStorage.getItem('counsel_base_seconds') || '0');
+    if (storedStart) {
+      const elapsed = Math.floor((Date.now() - storedStart) / 1000);
+      return storedBase + elapsed;
+    }
+    return 0;
+  });
+  const [counselItemTitle, setCounselItemTitle] = useState(() => {
+    return localStorage.getItem('counsel_item_title') || '';
+  });
+  const [counselItemId, setCounselItemId] = useState<string | null>(() => {
+    return localStorage.getItem('counsel_item_id');
+  });
+  const counselTimerRef = useRef<number>(0);
+
   // Name Editing State
   const [isEditingName, setIsEditingName] = useState(false);
   const [editingNameValue, setEditingNameValue] = useState('');
@@ -118,6 +139,20 @@ const LiveMeeting: React.FC = () => {
     let interval: any;
 
     if (isRunning) {
+      // Request Wake Lock to prevent screen from sleeping during meeting
+      let wakeLock: WakeLockSentinel | null = null;
+      const requestWakeLock = async () => {
+        try {
+          if ('wakeLock' in navigator) {
+            wakeLock = await (navigator as any).wakeLock.request('screen');
+            console.log('Wake Lock active');
+          }
+        } catch (err) {
+          console.log('Wake Lock not supported or failed:', err);
+        }
+      };
+      requestWakeLock();
+
       // Defined outside loop to handle init, but updated inside loop
       let startTime = parseInt(localStorage.getItem('timer_start_timestamp') || '0');
       let baseSeconds = parseInt(localStorage.getItem('timer_base_seconds') || '0');
@@ -147,10 +182,67 @@ const LiveMeeting: React.FC = () => {
 
       updateTimer(); // Update immediately
       interval = setInterval(updateTimer, 1000);
+
+      // Release wake lock on cleanup
+      return () => {
+        clearInterval(interval);
+        if (wakeLock) {
+          wakeLock.release().then(() => console.log('Wake Lock released'));
+        }
+      };
     }
 
     return () => clearInterval(interval);
   }, [isRunning]);
+
+  // Counsel timer effect with persistence
+  useEffect(() => {
+    let interval: any;
+
+    if (isCounselMode && isRunning) {
+      // Set persistence for counsel timer
+      let startTime = parseInt(localStorage.getItem('counsel_start_timestamp') || '0');
+      let baseSeconds = parseInt(localStorage.getItem('counsel_base_seconds') || '0');
+
+      if (!startTime) {
+        startTime = Date.now();
+        baseSeconds = counselSeconds;
+        localStorage.setItem('counsel_start_timestamp', startTime.toString());
+        localStorage.setItem('counsel_base_seconds', baseSeconds.toString());
+      }
+
+      interval = setInterval(() => {
+        const currentStart = parseInt(localStorage.getItem('counsel_start_timestamp') || '0');
+        const currentBase = parseInt(localStorage.getItem('counsel_base_seconds') || '0');
+
+        if (!currentStart) return;
+
+        const now = Date.now();
+        const elapsed = Math.floor((now - currentStart) / 1000);
+        const newTotal = currentBase + elapsed;
+
+        setCounselSeconds(newTotal);
+        counselTimerRef.current = newTotal;
+      }, 1000);
+    }
+
+    return () => clearInterval(interval);
+  }, [isCounselMode, isRunning]);
+
+  // Persist counsel mode state
+  useEffect(() => {
+    localStorage.setItem('counsel_mode', isCounselMode.toString());
+    if (isCounselMode) {
+      if (counselItemTitle) localStorage.setItem('counsel_item_title', counselItemTitle);
+      if (counselItemId) localStorage.setItem('counsel_item_id', counselItemId);
+    } else {
+      // Clear counsel state when exiting counsel mode
+      localStorage.removeItem('counsel_start_timestamp');
+      localStorage.removeItem('counsel_base_seconds');
+      localStorage.removeItem('counsel_item_title');
+      localStorage.removeItem('counsel_item_id');
+    }
+  }, [isCounselMode, counselItemTitle, counselItemId]);
 
   // Check for persistent state on mount/items load
   useEffect(() => {
@@ -323,6 +415,58 @@ const LiveMeeting: React.FC = () => {
   };
 
   const handleNext = async () => {
+    // If we're in counsel mode, save counsel and advance
+    if (isCounselMode) {
+      // Save counsel time to comments table
+      if (meetingId && counselItemId) {
+        try {
+          await supabase
+            .from('comments')
+            .insert({
+              meeting_id: meetingId,
+              agenda_item_id: counselItemId,
+              duration_seconds: counselTimerRef.current,
+              comment_type: 'post_student',
+            });
+        } catch (err) {
+          console.error('Error saving counsel:', err);
+        }
+      }
+
+      // Exit counsel mode
+      setIsCounselMode(false);
+      setCounselSeconds(0);
+      counselTimerRef.current = 0;
+      setCounselItemTitle('');
+      setCounselItemId(null);
+
+      // Now advance to next item
+      if (activeIndex < items.length - 1) {
+        const nextIndex = activeIndex + 1;
+
+        const newItems = [...items];
+        newItems[nextIndex].status = 'active';
+        setItems(newItems);
+        setActiveIndex(nextIndex);
+
+        // Reset main timer for next part
+        setTotalSeconds(0);
+        timerRef.current = 0;
+
+        // Update persistence for next item if running
+        if (isRunning) {
+          localStorage.setItem('timer_start_timestamp', Date.now().toString());
+          localStorage.setItem('timer_base_seconds', '0');
+          localStorage.setItem('timer_active_item_id', items[nextIndex].id);
+        } else {
+          localStorage.removeItem('timer_start_timestamp');
+          localStorage.removeItem('timer_base_seconds');
+          localStorage.removeItem('timer_active_item_id');
+        }
+      }
+      return;
+    }
+
     // Save actual_seconds for current item and mark as completed
     if (items[activeIndex]) {
       await saveActualSeconds(items[activeIndex].id, timerRef.current);
@@ -335,23 +479,36 @@ const LiveMeeting: React.FC = () => {
       // Activate next item in DB immediately so it loads correctly on return
       await updateItemStatus(items[nextIndex].id, 'active');
 
-      // Check if current item requires a post-comment (Student Part)
+      // Check if current item requires a post-comment (hasCounsel = true)
+      // Enter inline counsel mode instead of navigating away
       if (items[activeIndex] && items[activeIndex].requires_post_comment) {
-        setIsRunning(false);
-        // Clear persistence
+        // Store the item info for counsel
+        setCounselItemTitle(items[activeIndex].title);
+        setCounselItemId(items[activeIndex].id);
+
+        // Enter counsel mode
+        setIsCounselMode(true);
+        setCounselSeconds(0);
+        counselTimerRef.current = 0;
+
+        // Keep timer state - counsel timer will auto-start if isRunning
+        // Reset main timer display for counsel
+        setTotalSeconds(0);
+        timerRef.current = 0;
+
+        // Clear main timer persistence (counsel has its own timer)
         localStorage.removeItem('timer_start_timestamp');
         localStorage.removeItem('timer_base_seconds');
         localStorage.removeItem('timer_active_item_id');
 
-        // Store ID of the item being commented on
-        localStorage.setItem('active_agenda_item_id', items[activeIndex].id);
-        // Flag to tell CommentTracker to return to LiveMeeting immediately
-        localStorage.setItem('return_to_next', 'true');
-        navigate('/comment');
+        // Auto-start counsel timer
+        if (!isRunning) {
+          setIsRunning(true);
+        }
         return;
       }
 
-      // Normal transition
+      // Normal transition (no counsel needed)
       const newItems = [...items];
       if (items[activeIndex]) newItems[activeIndex].status = 'completed';
       newItems[activeIndex].actual_seconds = timerRef.current;
@@ -369,7 +526,6 @@ const LiveMeeting: React.FC = () => {
         localStorage.setItem('timer_base_seconds', '0');
         localStorage.setItem('timer_active_item_id', items[nextIndex].id);
       } else {
-        // Just clear if not running
         localStorage.removeItem('timer_start_timestamp');
         localStorage.removeItem('timer_base_seconds');
         localStorage.removeItem('timer_active_item_id');
@@ -461,22 +617,6 @@ const LiveMeeting: React.FC = () => {
             >
               <span className="truncate">Assistência</span>
             </button>
-            {/* Botão de comentário - só aparece se a parte atual permite */}
-            {activeItem?.allows_comments && (
-              <button
-                onClick={() => {
-                  const activeItemData = items[activeIndex];
-                  if (activeItemData) {
-                    localStorage.setItem('active_agenda_item_id', activeItemData.id);
-                  }
-                  navigate('/comment');
-                }}
-                className="flex items-center gap-2 overflow-hidden rounded-lg h-9 px-4 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/40 transition-colors"
-              >
-                <span className="material-symbols-outlined text-[18px]">chat_bubble</span>
-                <span className="text-sm font-bold">Comentário</span>
-              </button>
-            )}
           </div>
         </div>
       </header>
@@ -488,75 +628,95 @@ const LiveMeeting: React.FC = () => {
           <div className="w-full max-w-3xl flex flex-col items-center gap-8 animate-fade-in">
             {/* Topic Header */}
             <div className="text-center w-full space-y-4">
-              {/* Section Badge */}
-              {activeItem?.section && (
-                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full ${SECTION_COLORS[activeItem.section].bg} ${SECTION_COLORS[activeItem.section].text} text-xs font-bold uppercase tracking-wider`}>
-                  <span className="material-symbols-outlined text-sm">{MEETING_SECTIONS[activeItem.section].icon}</span>
-                  {MEETING_SECTIONS[activeItem.section].label}
-                </div>
-              )}
-              {/* Status Badge */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-bold uppercase tracking-wider ml-2">
-                <span className={`w-2 h-2 rounded-full bg-green-500 ${isRunning ? 'animate-pulse' : ''}`}></span>
-                Ao Vivo
-              </div>
-              <h1 className="text-[#111318] dark:text-white tracking-tight text-3xl md:text-5xl font-bold leading-tight">
-                {activeItem?.title || 'Nenhuma parte'}
-              </h1>
+              {/* Counsel Mode Indicator */}
+              {isCounselMode ? (
+                <>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-sm font-bold uppercase tracking-wider">
+                    <span className="material-symbols-outlined text-lg">record_voice_over</span>
+                    Conselho do Presidente
+                  </div>
+                  <h1 className="text-orange-600 dark:text-orange-400 tracking-tight text-3xl md:text-5xl font-bold leading-tight">
+                    Conselho (Presidente)
+                  </h1>
+                  <p className="text-gray-500 dark:text-gray-400 text-lg">
+                    Parte: <span className="font-medium">{counselItemTitle}</span>
+                  </p>
+                </>
+              ) : (
+                <>
+                  {/* Section Badge */}
+                  {activeItem?.section && (
+                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full ${SECTION_COLORS[activeItem.section].bg} ${SECTION_COLORS[activeItem.section].text} text-xs font-bold uppercase tracking-wider`}>
+                      <span className="material-symbols-outlined text-sm">{MEETING_SECTIONS[activeItem.section].icon}</span>
+                      {MEETING_SECTIONS[activeItem.section].label}
+                    </div>
+                  )}
+                  {/* Status Badge */}
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-bold uppercase tracking-wider ml-2">
+                    <span className={`w-2 h-2 rounded-full bg-green-500 ${isRunning ? 'animate-pulse' : ''}`}></span>
+                    Ao Vivo
+                  </div>
+                  <h1 className="text-[#111318] dark:text-white tracking-tight text-3xl md:text-5xl font-bold leading-tight">
+                    {activeItem?.title || 'Nenhuma parte'}
+                  </h1>
 
-              {/* Name Display / Editing */}
-              <div className="min-h-[40px] flex items-center justify-center">
-                {isEditingName ? (
-                  <div className="flex items-center gap-2 animate-fade-in">
-                    <input
-                      type="text"
-                      value={editingNameValue}
-                      onChange={(e) => setEditingNameValue(e.target.value)}
-                      className="border border-primary rounded-lg px-3 py-1 text-lg text-center dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 w-64"
-                      placeholder="Nome do irmão"
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') saveEditedName();
-                        if (e.key === 'Escape') setIsEditingName(false);
-                      }}
-                    />
-                    <button
-                      onClick={saveEditedName}
-                      className="p-1.5 bg-green-100 text-green-700 rounded-full hover:bg-green-200"
-                    >
-                      <span className="material-symbols-outlined text-xl">check</span>
-                    </button>
-                    <button
-                      onClick={() => setIsEditingName(false)}
-                      className="p-1.5 bg-red-100 text-red-700 rounded-full hover:bg-red-200"
-                    >
-                      <span className="material-symbols-outlined text-xl">close</span>
-                    </button>
+                  {/* Name Display / Editing */}
+                  <div className="min-h-[40px] flex items-center justify-center">
+                    {isEditingName ? (
+                      <div className="flex items-center gap-2 animate-fade-in">
+                        <input
+                          type="text"
+                          value={editingNameValue}
+                          onChange={(e) => setEditingNameValue(e.target.value)}
+                          className="border border-primary rounded-lg px-3 py-1 text-lg text-center dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 w-64"
+                          placeholder="Nome do irmão"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') saveEditedName();
+                            if (e.key === 'Escape') setIsEditingName(false);
+                          }}
+                        />
+                        <button
+                          onClick={saveEditedName}
+                          className="p-1.5 bg-green-100 text-green-700 rounded-full hover:bg-green-200"
+                        >
+                          <span className="material-symbols-outlined text-xl">check</span>
+                        </button>
+                        <button
+                          onClick={() => setIsEditingName(false)}
+                          className="p-1.5 bg-red-100 text-red-700 rounded-full hover:bg-red-200"
+                        >
+                          <span className="material-symbols-outlined text-xl">close</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={startEditingName}
+                        className="group flex items-center justify-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                        title="Clique para editar o nome"
+                      >
+                        <p className="text-primary dark:text-blue-400 text-lg font-medium">
+                          <span className="material-symbols-outlined align-middle text-lg mr-1">person</span>
+                          {activeItem?.assigned_names || <span className="italic opacity-50">Sem designação</span>}
+                        </p>
+                        <span className="material-symbols-outlined text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity text-sm">edit</span>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div
-                    onClick={startEditingName}
-                    className="group flex items-center justify-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                    title="Clique para editar o nome"
-                  >
-                    <p className="text-primary dark:text-blue-400 text-lg font-medium">
-                      <span className="material-symbols-outlined align-middle text-lg mr-1">person</span>
-                      {activeItem?.assigned_names || <span className="italic opacity-50">Sem designação</span>}
-                    </p>
-                    <span className="material-symbols-outlined text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity text-sm">edit</span>
-                  </div>
-                )}
-              </div>
+                </>
+              )}
             </div>
 
             {/* Mega Timer - Minutes and Seconds ONLY */}
             <div className="flex gap-3 sm:gap-6 py-4">
               {/* Minutes */}
               <div className="flex flex-col items-center gap-2">
-                <div className="flex h-32 sm:h-48 w-28 sm:w-40 items-center justify-center rounded-xl sm:rounded-2xl bg-white dark:bg-gray-800 border-4 border-primary shadow-2xl shadow-primary/20">
-                  <p className="text-primary dark:text-blue-400 text-6xl sm:text-8xl font-bold leading-none tracking-tight font-mono">{pad(minutes)}</p>
+                <div className={`flex h-32 sm:h-48 w-28 sm:w-40 items-center justify-center rounded-xl sm:rounded-2xl bg-white dark:bg-gray-800 border-4 ${isCounselMode ? 'border-orange-500 shadow-orange-500/20' : 'border-primary shadow-primary/20'} shadow-2xl`}>
+                  <p className={`${isCounselMode ? 'text-orange-500' : 'text-primary dark:text-blue-400'} text-6xl sm:text-8xl font-bold leading-none tracking-tight font-mono`}>
+                    {isCounselMode ? pad(Math.floor(counselSeconds / 60)) : pad(minutes)}
+                  </p>
                 </div>
-                <p className="text-primary dark:text-blue-400 text-sm font-bold uppercase tracking-wider">Minutos</p>
+                <p className={`${isCounselMode ? 'text-orange-500' : 'text-primary dark:text-blue-400'} text-sm font-bold uppercase tracking-wider`}>Minutos</p>
               </div>
               {/* Separator */}
               <div className="flex h-32 sm:h-48 items-center justify-center pb-8">
@@ -565,7 +725,9 @@ const LiveMeeting: React.FC = () => {
               {/* Seconds */}
               <div className="flex flex-col items-center gap-2">
                 <div className="flex h-32 sm:h-48 w-28 sm:w-40 items-center justify-center rounded-xl sm:rounded-2xl bg-[#f0f2f4] dark:bg-gray-800 border-2 border-transparent dark:border-gray-700">
-                  <p className="text-[#111318] dark:text-white text-6xl sm:text-8xl font-bold leading-none tracking-tight font-mono">{pad(seconds)}</p>
+                  <p className="text-[#111318] dark:text-white text-6xl sm:text-8xl font-bold leading-none tracking-tight font-mono">
+                    {isCounselMode ? pad(counselSeconds % 60) : pad(seconds)}
+                  </p>
                 </div>
                 <p className="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider">Segundos</p>
               </div>

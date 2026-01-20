@@ -41,7 +41,9 @@ const MeetingReport: React.FC = () => {
   const [attendance, setAttendance] = useState({ total: 0, presencial: 0, zoom: 0 });
   const [commentsCount, setCommentsCount] = useState(0);
   const [commentsTotalSeconds, setCommentsTotalSeconds] = useState(0);
+  const [counselTimes, setCounselTimes] = useState<Record<string, number>>({});
   const [exporting, setExporting] = useState(false);
+  const [copied, setCopied] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -118,15 +120,24 @@ const MeetingReport: React.FC = () => {
         });
       }
 
-      // Fetch comments stats
+      // Fetch comments stats and build counsel times map
       const { data: commentsData } = await supabase
         .from('comments')
-        .select('duration_seconds')
+        .select('duration_seconds, agenda_item_id, comment_type')
         .eq('meeting_id', meetingId);
 
       if (commentsData) {
         setCommentsCount(commentsData.length);
         setCommentsTotalSeconds(commentsData.reduce((sum, c) => sum + (c.duration_seconds || 0), 0));
+
+        // Build counsel times map (post_student comments per agenda item)
+        const counselMap: Record<string, number> = {};
+        commentsData.forEach(comment => {
+          if (comment.comment_type === 'post_student' && comment.agenda_item_id) {
+            counselMap[comment.agenda_item_id] = (counselMap[comment.agenda_item_id] || 0) + (comment.duration_seconds || 0);
+          }
+        });
+        setCounselTimes(counselMap);
       }
 
       setLoading(false);
@@ -162,6 +173,93 @@ const MeetingReport: React.FC = () => {
 
   const getDifference = () => {
     return getTotalActual() - getTotalEstimated();
+  };
+
+  // Format time as MM:SS
+  const formatTimeShort = (seconds: number) => {
+    const mins = Math.floor(Math.abs(seconds) / 60);
+    const secs = Math.abs(seconds) % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Get time status emoji (🔴 if > 30s overtime, 🟢 otherwise)
+  const getTimeEmoji = (actualSeconds: number, estimatedMinutes: number) => {
+    const estimatedSeconds = estimatedMinutes * 60;
+    const difference = actualSeconds - estimatedSeconds;
+    return difference > 30 ? '🔴' : '🟢';
+  };
+
+  // Generate text report in the exact format requested
+  const generateTextReport = (): string => {
+    if (!meeting) return '';
+
+    const date = meeting.started_at ? new Date(meeting.started_at) : new Date();
+    const dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const theme = meeting.week?.theme || 'Reunião do Meio de Semana';
+    const startTime = meeting.started_at ? new Date(meeting.started_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+    const endTime = meeting.finished_at ? new Date(meeting.finished_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+
+    let report = `[${dateStr} / ${theme}]\n`;
+    report += `Assistência: ${attendance.total}\n\n`;
+
+    // Group items by section
+    const sectionOrder: SectionKey[] = ['tesouros', 'ministerio', 'vida_crista'];
+    const sectionNames: Record<SectionKey, string> = {
+      abertura: 'ABERTURA',
+      tesouros: 'TESOUROS',
+      ministerio: 'MINISTÉRIO',
+      vida_crista: 'VIDA CRISTÃ',
+      encerramento: 'ENCERRAMENTO'
+    };
+
+    sectionOrder.forEach(sectionKey => {
+      const sectionItems = agendaItems.filter(item => item.section === sectionKey);
+      if (sectionItems.length === 0) return;
+
+      report += `${sectionNames[sectionKey]}\n`;
+
+      sectionItems.forEach(item => {
+        const emoji = getTimeEmoji(item.actual_seconds || 0, item.estimated_minutes);
+        const actualTime = formatTimeShort(item.actual_seconds || 0);
+        const estimatedTime = formatTimeShort(item.estimated_minutes * 60);
+        const difference = (item.actual_seconds || 0) - (item.estimated_minutes * 60);
+        const diffStr = difference > 0 ? `+${formatTimeShort(difference)}` : `-${formatTimeShort(Math.abs(difference))}`;
+
+        const nameStr = item.assigned_names ? ` (${item.assigned_names})` : '';
+
+        report += `${emoji} ${item.title}${nameStr}: ${actualTime} (${diffStr} vs ${estimatedTime})\n`;
+
+        // Add counsel time if exists
+        const counselTime = counselTimes[item.id];
+        if (counselTime) {
+          report += `   Conselho: ${formatTimeShort(counselTime)}\n`;
+        }
+      });
+
+      report += '\n';
+    });
+
+    // Total duration
+    const totalSeconds = meeting.total_duration_seconds || (getTotalActual() + commentsTotalSeconds);
+    const totalHours = Math.floor(totalSeconds / 3600);
+    const totalMins = Math.floor((totalSeconds % 3600) / 60);
+    report += `Duração Total: ${totalHours.toString().padStart(2, '0')}:${totalMins.toString().padStart(2, '0')}\n`;
+    report += `Início: ${startTime} | Fim: ${endTime}\n`;
+
+    return report;
+  };
+
+  // Copy text report to clipboard
+  const handleCopyToClipboard = async () => {
+    const textReport = generateTextReport();
+    try {
+      await navigator.clipboard.writeText(textReport);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Error copying to clipboard:', err);
+      alert('Erro ao copiar. Tente novamente.');
+    }
   };
 
   const handleExportImage = async () => {
@@ -282,8 +380,16 @@ const MeetingReport: React.FC = () => {
                   </p>
                 )}
               </div>
-              <div className="flex gap-3">
-                {/* Export Button */}
+              <div className="flex flex-wrap gap-3">
+                {/* Copy Text Report Button */}
+                <button
+                  onClick={handleCopyToClipboard}
+                  className={`flex cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 ${copied ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-purple-100 dark:bg-purple-900/30 hover:bg-purple-200 dark:hover:bg-purple-800/40 text-purple-700 dark:text-purple-300'} text-sm font-bold transition-colors`}
+                >
+                  <span className="material-symbols-outlined text-[18px] mr-2">{copied ? 'check_circle' : 'content_copy'}</span>
+                  <span className="truncate">{copied ? 'Copiado!' : 'Copiar Texto'}</span>
+                </button>
+                {/* Export Image Button */}
                 <button
                   onClick={handleExportImage}
                   disabled={exporting}
@@ -464,7 +570,7 @@ const MeetingReport: React.FC = () => {
                                     ) : (
                                       <span className="inline-flex items-center gap-1 rounded-md bg-green-50 dark:bg-green-900/20 px-2 py-1 text-xs font-medium text-green-700 dark:text-green-400 border border-green-100 dark:border-green-900/30">
                                         <span className="material-symbols-outlined text-[14px]">check_circle</span>
-                                        No tempo
+                                        -{formatTime(Math.abs(difference))}
                                       </span>
                                     )
                                   ) : (

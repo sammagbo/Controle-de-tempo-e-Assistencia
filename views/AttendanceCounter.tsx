@@ -12,9 +12,19 @@ interface AttendanceRecord {
 
 const AttendanceCounter: React.FC = () => {
   const navigate = useNavigate();
-  const [presencial, setPresencial] = useState(0);
-  const [zoom, setZoom] = useState(0);
-  const [showZoom, setShowZoom] = useState(false);
+  // Initialize from localStorage if available
+  const [presencial, setPresencial] = useState(() => {
+    const stored = localStorage.getItem('attendance_presencial');
+    return stored ? parseInt(stored) : 0;
+  });
+  const [zoom, setZoom] = useState(() => {
+    const stored = localStorage.getItem('attendance_zoom');
+    return stored ? parseInt(stored) : 0;
+  });
+  const [showZoom, setShowZoom] = useState(() => {
+    const storedZoom = localStorage.getItem('attendance_zoom');
+    return storedZoom ? parseInt(storedZoom) > 0 : false;
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [history, setHistory] = useState<AttendanceRecord[]>([]);
@@ -75,6 +85,16 @@ const AttendanceCounter: React.FC = () => {
 
     fetchHistory();
   }, []);
+
+  // Persist presencial to localStorage
+  useEffect(() => {
+    localStorage.setItem('attendance_presencial', presencial.toString());
+  }, [presencial]);
+
+  // Persist zoom to localStorage
+  useEffect(() => {
+    localStorage.setItem('attendance_zoom', zoom.toString());
+  }, [zoom]);
 
   const saveAttendance = async () => {
     if (saving) return;

@@ -16,10 +16,10 @@ export default defineConfig(({ mode }) => {
         registerType: 'autoUpdate',
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
         manifest: {
-          name: 'Controle de Tempo e Assistência',
-          short_name: 'MeetingManager',
+          name: 'Meeting Manager',
+          short_name: 'Meeting',
           description: 'Gestão de tempo e assistência para reuniões da congregação',
-          theme_color: '#4285f4',
+          theme_color: '#000000',
           background_color: '#ffffff',
           display: 'standalone',
           orientation: 'portrait',

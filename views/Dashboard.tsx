@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CURRENT_USER } from '../types';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../lib/AuthContext';
 import { t } from '../lib/translations';
+import { getCurrentWeekSchedule, isCurrentWeek as checkIsCurrentWeek, getAllScheduleWeeks } from '../lib/data/officialSchedule2026';
+import { seedWeeks } from '../lib/seedWeeks';
 
 interface Period {
   id: string;
@@ -29,9 +31,43 @@ const Dashboard: React.FC = () => {
   const [selectingDayForWeek, setSelectingDayForWeek] = useState<string | null>(null);
   const [creatingMeeting, setCreatingMeeting] = useState(false);
   const [suggestedWeekId, setSuggestedWeekId] = useState<string | null>(null);
+  const currentWeekRef = useRef<HTMLDivElement>(null);
+  const [syncing, setSyncing] = useState(false);
+
+  // Function to sync database with hardcoded schedule
+  const handleSyncWeeks = async () => {
+    setSyncing(true);
+    try {
+      const result = await seedWeeks();
+      if (result.success) {
+        alert('✅ Semanas sincronizadas com sucesso! Recarregando...');
+        window.location.reload();
+      } else {
+        alert('❌ Erro ao sincronizar: ' + (result.error?.message || 'Erro desconhecido'));
+      }
+    } catch (err) {
+      alert('❌ Erro: ' + String(err));
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   // Helper function to check if today falls within a week's date range
   const findCurrentWeek = (weeksList: Week[]): string | null => {
+    if (weeksList.length === 0) return null;
+
+    // First, check our hardcoded schedule for the true current week
+    const officialCurrentWeek = getCurrentWeekSchedule();
+    if (officialCurrentWeek) {
+      // Try to find a matching week in the DB list by date range
+      const matchingDbWeek = weeksList.find(w =>
+        w.date_range.toLowerCase().includes(officialCurrentWeek.dateRange.split('-')[0].trim())
+      );
+      if (matchingDbWeek) {
+        return matchingDbWeek.id;
+      }
+    }
+
     const today = new Date();
     const currentDay = today.getDate();
     const currentMonth = today.getMonth(); // 0-indexed
@@ -85,7 +121,8 @@ const Dashboard: React.FC = () => {
       }
     }
 
-    return null;
+    // FALLBACK: If no exact match, return the first week as the "featured" one
+    return weeksList[0]?.id || null;
   };
 
   const handleStartMeeting = async (weekId: string, meetingDay: string) => {
@@ -209,6 +246,15 @@ const Dashboard: React.FC = () => {
 
     fetchWeeks();
   }, [selectedPeriod]);
+
+  // Auto-scroll to current week on mount
+  useEffect(() => {
+    if (suggestedWeekId && currentWeekRef.current) {
+      setTimeout(() => {
+        currentWeekRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    }
+  }, [suggestedWeekId]);
 
   const getStatusBadge = (status?: string) => {
     switch (status?.toLowerCase()) {
@@ -371,6 +417,20 @@ const Dashboard: React.FC = () => {
           <button className="hidden md:flex items-center justify-center px-4 py-2.5 border border-[#dbdfe6] dark:border-[#4b5563] rounded-lg bg-white dark:bg-[#232d3d] text-[#111318] dark:text-white hover:bg-[#f0f2f4] dark:hover:bg-[#2a3441] transition-colors">
             <span className="material-symbols-outlined">filter_list</span>
           </button>
+          {/* Sync Database Button */}
+          <button
+            onClick={handleSyncWeeks}
+            disabled={syncing}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 border border-purple-500 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors disabled:opacity-50"
+            title="Sincronizar semanas com o calendário oficial"
+          >
+            <span className={`material-symbols-outlined ${syncing ? 'animate-spin' : ''}`}>
+              {syncing ? 'progress_activity' : 'sync'}
+            </span>
+            <span className="hidden md:inline text-sm font-medium">
+              {syncing ? 'Sincronizando...' : 'Sincronizar'}
+            </span>
+          </button>
         </div>
 
         {/* Meeting List */}
@@ -394,43 +454,44 @@ const Dashboard: React.FC = () => {
                 return (
                   <div
                     key={currentWeek.id}
-                    className="group relative flex flex-col p-8 rounded-2xl border-2 border-primary bg-gradient-to-br from-primary/10 via-primary/5 to-transparent dark:from-primary/20 dark:via-primary/10 shadow-lg ring-4 ring-primary/20 mb-6"
+                    ref={currentWeekRef}
+                    className="group relative flex flex-col p-8 md:p-10 rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-600 to-indigo-700 shadow-2xl mb-10"
                   >
-                    {/* Large Badge */}
-                    <div className="absolute -top-4 left-6 px-4 py-2 bg-primary text-white text-sm font-bold rounded-full shadow-lg flex items-center gap-2">
-                      <span className="material-symbols-outlined">today</span>
-                      SEMANA ATUAL
+                    {/* Hero Badge */}
+                    <div className="absolute -top-4 left-6 px-5 py-2.5 bg-white text-indigo-700 text-sm font-black rounded-full shadow-lg flex items-center gap-2">
+                      <span className="text-lg">📅</span>
+                      REUNIÃO DESTA SEMANA
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mt-4">
-                      <div className="flex items-start gap-6">
-                        {/* Large Week Number */}
-                        <div className="flex-shrink-0 flex flex-col items-center justify-center w-24 h-24 rounded-xl bg-primary text-white shadow-md">
-                          <span className="text-xs font-bold uppercase tracking-wider opacity-80">Semana</span>
-                          <span className="text-4xl font-black">{String(currentIndex + 1).padStart(2, '0')}</span>
+                    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 mt-4">
+                      <div className="flex items-start gap-6 md:gap-8">
+                        {/* Large Week Number - White Box */}
+                        <div className="flex-shrink-0 flex flex-col items-center justify-center w-28 h-28 md:w-36 md:h-36 rounded-2xl bg-white/20 backdrop-blur-sm text-white border-2 border-white/30">
+                          <span className="text-xs md:text-sm font-bold uppercase tracking-wider opacity-90">Semana</span>
+                          <span className="text-5xl md:text-6xl font-black">{String(currentIndex + 1).padStart(2, '0')}</span>
                         </div>
-                        <div className="flex flex-col gap-2">
-                          <span className="text-lg font-semibold text-primary">{currentWeek.date_range}</span>
-                          <h3 className="text-2xl font-black text-[#111318] dark:text-white">
+                        <div className="flex flex-col gap-2 text-white">
+                          <span className="text-lg md:text-xl font-bold opacity-90">{currentWeek.date_range}</span>
+                          <h3 className="text-2xl md:text-3xl lg:text-4xl font-black leading-tight">
                             {currentWeek.label}
                           </h3>
-                          <p className="text-base text-[#616f89] dark:text-[#9ca3af]">{currentWeek.theme}</p>
+                          <p className="text-base md:text-lg opacity-80 max-w-lg">{currentWeek.theme}</p>
                         </div>
                       </div>
 
-                      {/* Start Meeting Button - Direct */}
-                      <div className="w-full sm:w-auto">
+                      {/* Big White INICIAR Button */}
+                      <div className="w-full lg:w-auto">
                         <button
                           onClick={() => handleStartMeeting(currentWeek.id, 'midweek')}
                           disabled={creatingMeeting}
-                          className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 text-lg font-bold rounded-xl shadow-lg text-white bg-primary hover:bg-blue-700 transition-all disabled:opacity-50"
+                          className="w-full lg:w-auto inline-flex items-center justify-center gap-3 px-10 py-5 text-xl md:text-2xl font-black rounded-2xl shadow-xl text-indigo-700 bg-white hover:bg-gray-100 transition-all disabled:opacity-50 transform hover:scale-105 active:scale-95"
                         >
                           {creatingMeeting ? (
                             <span className="material-symbols-outlined animate-spin text-2xl">progress_activity</span>
                           ) : (
-                            <span className="material-symbols-outlined text-2xl">play_circle</span>
+                            <span className="material-symbols-outlined text-2xl md:text-3xl">play_circle</span>
                           )}
-                          {creatingMeeting ? 'Criando...' : 'Iniciar Reunião'}
+                          {creatingMeeting ? 'Criando...' : 'INICIAR'}
                         </button>
                       </div>
                     </div>

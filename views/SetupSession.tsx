@@ -9,8 +9,13 @@ import {
   SectionKey,
   getTotalEstimatedMinutes
 } from '../lib/meetingTemplate';
-import { parseMeetingPDF } from '../lib/pdfParser';
-import { parseWorkbookFile } from '../lib/htmlParser';
+import {
+  getCurrentWeekSchedule,
+  getAllScheduleWeeks,
+  convertScheduleToMeetingParts,
+  isCurrentWeek,
+  ScheduleWeek,
+} from '../lib/data/officialSchedule2026';
 import {
   DndContext,
   closestCenter,
@@ -151,13 +156,11 @@ const SetupSession: React.FC = () => {
   const navigate = useNavigate();
   const [meetingId, setMeetingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const [items, setItems] = useState<SetupItem[]>(
-    DEFAULT_MEETING_TEMPLATE.map(item => ({ ...item }))
-  );
+  const [selectedWeek, setSelectedWeek] = useState<ScheduleWeek | null>(null);
+  const [availableWeeks] = useState<ScheduleWeek[]>(getAllScheduleWeeks());
+  const [items, setItems] = useState<SetupItem[]>([]);
   const [selectedDay, setSelectedDay] = useState('Tuesday');
   const [presidentName, setPresidentName] = useState('');
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // DnD Sensors
   const sensors = useSensors(
@@ -171,26 +174,62 @@ const SetupSession: React.FC = () => {
     })
   );
 
+  // Load initial schedule data or restore from localStorage
   useEffect(() => {
     const storedMeetingId = localStorage.getItem('active_meeting_id');
     if (storedMeetingId) {
       setMeetingId(storedMeetingId);
     }
 
-    // Auto-fill Congregation for songs if empty
-    setItems(currentItems =>
-      currentItems.map(item => {
+    // Try to restore from localStorage first
+    const storedItems = localStorage.getItem('setup_items');
+    const storedWeekId = localStorage.getItem('setup_selected_week');
+    const storedPresident = localStorage.getItem('setup_president_name');
+
+    if (storedPresident) {
+      setPresidentName(storedPresident);
+    }
+
+    if (storedItems && storedWeekId) {
+      // Restore from localStorage
+      try {
+        const parsedItems = JSON.parse(storedItems);
+        setItems(parsedItems);
+        const week = availableWeeks.find(w => w.id === storedWeekId);
+        if (week) {
+          setSelectedWeek(week);
+        }
+        return; // Skip default loading
+      } catch (e) {
+        console.error('Error parsing stored items:', e);
+      }
+    }
+
+    // Load the current week schedule or default to first available
+    const currentWeek = getCurrentWeekSchedule();
+    if (currentWeek) {
+      setSelectedWeek(currentWeek);
+      const parts = convertScheduleToMeetingParts(currentWeek);
+      // Auto-fill Congregation for songs
+      const partsWithCongregation = parts.map(item => {
         if ((item.title.startsWith('Cântico') || item.title.includes('Cântico')) && !item.assignedNames) {
           return { ...item, assignedNames: 'Congregação' };
         }
         return item;
-      })
-    );
+      }) as SetupItem[];
+      setItems(partsWithCongregation);
+    } else {
+      // Fallback to default template if no schedule found
+      setItems(DEFAULT_MEETING_TEMPLATE.map(item => ({ ...item })));
+    }
   }, []);
 
   // Update Initial/Final Comments when President Name changes
   useEffect(() => {
     if (!presidentName) return;
+
+    // Persist president name
+    localStorage.setItem('setup_president_name', presidentName);
 
     setItems(currentItems =>
       currentItems.map(item => {
@@ -203,151 +242,36 @@ const SetupSession: React.FC = () => {
     );
   }, [presidentName]);
 
+  // Persist items to localStorage whenever they change
+  useEffect(() => {
+    if (items.length > 0) {
+      localStorage.setItem('setup_items', JSON.stringify(items));
+    }
+  }, [items]);
+
+  // Persist selected week
+  useEffect(() => {
+    if (selectedWeek) {
+      localStorage.setItem('setup_selected_week', selectedWeek.id);
+    }
+  }, [selectedWeek]);
+
   const totalDuration = getTotalEstimatedMinutes(items);
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setImporting(true);
-    try {
-      const parsedParts = await parseMeetingPDF(file);
-
-      if (parsedParts.length === 0) {
-        alert('Não foi possível extrair partes do PDF. Verifique se é uma apostila válida.');
-        setImporting(false);
-        return;
-      }
-
-      // Merge logic:
-      // Vamos manter as partes fixas que não foram encontradas e substituir/adicionar as encontradas.
-      // Como o parser retorna apenas as partes variáveis identificadas (Ministério, Vida Cristã),
-      // precisamos ser inteligentes.
-
-      // Estratégia: Resetar para o template padrão e substituir as seções dinâmicas
-      const baseItems = DEFAULT_MEETING_TEMPLATE.map(item => ({ ...item }));
-
-      // Separar os novos items por seção
-      const newMinisterio = parsedParts.filter(p => p.section === 'ministerio');
-      const newVidaCrista = parsedParts.filter(p => p.section === 'vida_crista');
-
-      // Se encontrou ministério, substituir TODOS os items de ministério do template
-      // com os novos. (Exceto talvez o fixo se houver, mas S-38-T diz que variam)
-      let finalItems = [...baseItems];
-
-      if (newMinisterio.length > 0) {
-        // Remove items de ministério padrão
-        finalItems = finalItems.filter(i => i.section !== 'ministerio');
-        // Adiciona novos
-        const ministerioItems = newMinisterio.map((p, idx) => ({
-          id: `imported-min-${idx}`,
-          title: p.title || 'Parte Importada',
-          estimatedMinutes: p.estimatedMinutes || 5,
-          section: 'ministerio' as SectionKey,
-          allowsComments: p.allowsComments || false,
-          requiresPostComment: p.requiresPostComment || true
-        }));
-        // Inserir antes de Vida Cristã (encontrar índice)
-        // Simplificação: vamos reordenar tudo no final ou inserir em posições conhecidas?
-        // Vamos apenas dar append e deixar o filter no render resolver, 
-        // mas a ordem do array importa para o banco.
-        // Melhor reconstruir o array.
-      }
-
-      if (newVidaCrista.length > 0) {
-        // Vida Cristã tem partes fixas (Cântico, Estudo). O parser ignorou essas.
-        // O parser retornou apenas as partes variáveis do meio.
-        // Vamos remover a parte "Necessidades / Parte Local" padrão e inserir as novas lá.
-
-        // Identificar items vida crista padrão para manter (Cânticos, Estudo)
-        // Geralmente IDs vida-crista-1 (cântico), vida-crista-3 (estudo)
-        const fixedVidaCrista = finalItems.filter(i =>
-          i.section === 'vida_crista' &&
-          (i.title.includes('Cântico') || i.title.includes('Estudo Bíblico'))
-        );
-
-        // Remover todos de vida crista
-        finalItems = finalItems.filter(i => i.section !== 'vida_crista');
-
-        const importedVidaCrista = newVidaCrista.map((p, idx) => ({
-          id: `imported-vc-${idx}`,
-          title: p.title || 'Parte Vida Cristã',
-          estimatedMinutes: p.estimatedMinutes || 10,
-          section: 'vida_crista' as SectionKey,
-          allowsComments: p.allowsComments ?? true,
-          requiresPostComment: p.requiresPostComment || false
-        }));
-
-        // Reconstruir Vida Cristã: Cântico Inicial > Importados > Estudo (se houver) > Cântico Final (que está em encerramento)
-        // No template, Cântico é o primeiro de vida crista.
-        // Estudo é o último.
-
-        // Adicionar de volta ao pool... mas espere.
-        // O código acima ("Separar os novos items") estava apenas preparando.
-        // Vamos fazer uma reconstrução limpa.
-      }
-
-      // Reconstrução Limpa baseada em Seções
-      // 1. Abertura (Fixo)
-      // 2. Tesouros (Fixo)
-      // 3. Ministério (Substituído se houver importação)
-      // 4. Vida Cristã (Híbrido)
-      // 5. Encerramento (Fixo)
-
-      const abertura = baseItems.filter(i => i.section === 'abertura');
-      const tesouros = baseItems.filter(i => i.section === 'tesouros');
-      const encerramento = baseItems.filter(i => i.section === 'encerramento');
-
-      let ministerio = baseItems.filter(i => i.section === 'ministerio');
-      if (newMinisterio.length > 0) {
-        ministerio = newMinisterio.map((p, idx) => ({
-          id: `imp-min-${idx}`,
-          title: p.title!,
-          estimatedMinutes: p.estimatedMinutes || 4,
-          section: 'ministerio' as SectionKey,
-          allowsComments: p.allowsComments || false,
-          requiresPostComment: p.requiresPostComment ?? true
-        }));
-      }
-
-      let vidaCrista = baseItems.filter(i => i.section === 'vida_crista');
-      if (newVidaCrista.length > 0) {
-        const cantico = vidaCrista.find(i => i.title.includes('Cântico')) || {
-          id: 'vc-temp-song', title: 'Cântico', estimatedMinutes: 5, section: 'vida_crista', allowsComments: false, requiresPostComment: false
-        };
-        const estudo = vidaCrista.find(i => i.title.includes('Estudo')) || {
-          id: 'vc-temp-study', title: 'Estudo Bíblico de Congregação', estimatedMinutes: 30, section: 'vida_crista', allowsComments: true, requiresPostComment: false
-        };
-
-        const middleParts = newVidaCrista.map((p, idx) => ({
-          id: `imp-vc-${idx}`,
-          title: p.title!,
-          estimatedMinutes: p.estimatedMinutes || 10,
-          section: 'vida_crista' as SectionKey,
-          allowsComments: true,
-          requiresPostComment: false
-        }));
-
-        vidaCrista = [cantico as SetupItem, ...middleParts, estudo as SetupItem];
-      }
-
-      setItems([
-        ...abertura,
-        ...tesouros,
-        ...ministerio,
-        ...vidaCrista,
-        ...encerramento
-      ]);
-
-      alert(`Importação concluída! ${parsedParts.length} partes identificadas.`);
-
-    } catch (error) {
-      console.error(error);
-      alert('Erro ao processar PDF.');
-    } finally {
-      setImporting(false);
-      // Reset input
-      if (fileInputRef.current) fileInputRef.current.value = '';
+  // Handle week selection change
+  const handleWeekChange = (weekId: string) => {
+    const week = availableWeeks.find(w => w.id === weekId);
+    if (week) {
+      setSelectedWeek(week);
+      const parts = convertScheduleToMeetingParts(week);
+      // Auto-fill Congregation for songs
+      const partsWithCongregation = parts.map(item => {
+        if ((item.title.startsWith('Cântico') || item.title.includes('Cântico')) && !item.assignedNames) {
+          return { ...item, assignedNames: 'Congregação' };
+        }
+        return item;
+      }) as SetupItem[];
+      setItems(partsWithCongregation);
     }
   };
 
@@ -543,26 +467,30 @@ const SetupSession: React.FC = () => {
           <h2 className="text-[#111318] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] cursor-pointer" onClick={() => navigate('/')}>Meeting Manager</h2>
         </div>
         <div className="flex items-center gap-4">
-          {/* Botão de Importar */}
-          <input
-            type="file"
-            accept=".pdf"
-            className="hidden"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-          />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={importing}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-sm font-medium transition-colors"
-          >
-            {importing ? (
-              <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
-            ) : (
-              <span className="material-symbols-outlined text-sm">upload_file</span>
+          {/* Week Selector */}
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-sm text-gray-500">calendar_month</span>
+            <select
+              value={selectedWeek?.id || ''}
+              onChange={(e) => handleWeekChange(e.target.value)}
+              className={`border-none rounded-lg px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer focus:ring-1 focus:ring-primary ${selectedWeek && isCurrentWeek(selectedWeek)
+                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-500'
+                  : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700'
+                }`}
+            >
+              {availableWeeks.map((week) => (
+                <option key={week.id} value={week.id}>
+                  {isCurrentWeek(week) ? `📅 ${week.dateRange} (ESTA SEMANA)` : week.dateRange}
+                </option>
+              ))}
+            </select>
+            {selectedWeek && isCurrentWeek(selectedWeek) && (
+              <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-bold">
+                <span className="material-symbols-outlined text-xs">event_available</span>
+                ESTA SEMANA
+              </span>
             )}
-            {importing ? 'Lendo PDF...' : 'Importar PDF'}
-          </button>
+          </div>
 
           <span className="text-sm text-gray-500 dark:text-gray-400">
             Tempo Total: <span className="font-bold text-primary">{totalDuration} min</span>
