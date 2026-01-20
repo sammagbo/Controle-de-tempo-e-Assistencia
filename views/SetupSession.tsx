@@ -436,6 +436,16 @@ const SetupSession: React.FC = () => {
         console.error('Error saving agenda items:', error);
         alert('Erro ao salvar agenda. Tente novamente.');
       } else {
+        // Clear all timer state before starting new meeting
+        localStorage.removeItem('timer_start_timestamp');
+        localStorage.removeItem('timer_base_seconds');
+        localStorage.removeItem('timer_active_item_id');
+        localStorage.removeItem('counsel_mode');
+        localStorage.removeItem('counsel_start_timestamp');
+        localStorage.removeItem('counsel_base_seconds');
+        localStorage.removeItem('counsel_item_title');
+        localStorage.removeItem('counsel_item_id');
+
         navigate('/live');
       }
     } catch (err) {
@@ -474,8 +484,8 @@ const SetupSession: React.FC = () => {
               value={selectedWeek?.id || ''}
               onChange={(e) => handleWeekChange(e.target.value)}
               className={`border-none rounded-lg px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer focus:ring-1 focus:ring-primary ${selectedWeek && isCurrentWeek(selectedWeek)
-                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-500'
-                  : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700'
+                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-500'
+                : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700'
                 }`}
             >
               {availableWeeks.map((week) => (
