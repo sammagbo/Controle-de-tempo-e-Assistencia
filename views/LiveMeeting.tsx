@@ -305,17 +305,9 @@ const LiveMeeting: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isRunning, activeIndex, items.length]);
 
-  // BUGFIX: Force stop timer when meeting is finished
-  const isMeetingFinished = activeIndex >= items.length && items.length > 0;
-
-  useEffect(() => {
-    if (isMeetingFinished && isRunning) {
-      setIsRunning(false);
-      localStorage.removeItem('timer_start_timestamp');
-      localStorage.removeItem('timer_base_seconds');
-      localStorage.removeItem('timer_active_item_id');
-    }
-  }, [isMeetingFinished, isRunning]);
+  // Remover lógica quebrada de 'isMeetingFinished'
+  // Constants checks activeIndex >= items.length which is never reached properly because of handleNext logic.
+  // Fim da reunião é lidado explicitamente via finalizeMeeting ou pela remoção de isRunning.
 
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
@@ -532,11 +524,19 @@ const LiveMeeting: React.FC = () => {
       setTotalSeconds(0);
       timerRef.current = 0;
 
-      // Update persistence for next item if running
+      // Update persistence for next item if running AND next item allows timing
       if (isRunning) {
-        localStorage.setItem('timer_start_timestamp', Date.now().toString());
-        localStorage.setItem('timer_base_seconds', '0');
-        localStorage.setItem('timer_active_item_id', items[nextIndex].id);
+        if (newItems[nextIndex]?.skip_timing) {
+          // Should not auto-start a skipped-timing item
+          setIsRunning(false);
+          localStorage.removeItem('timer_start_timestamp');
+          localStorage.removeItem('timer_base_seconds');
+          localStorage.removeItem('timer_active_item_id');
+        } else {
+          localStorage.setItem('timer_start_timestamp', Date.now().toString());
+          localStorage.setItem('timer_base_seconds', '0');
+          localStorage.setItem('timer_active_item_id', items[nextIndex].id);
+        }
       } else {
         localStorage.removeItem('timer_start_timestamp');
         localStorage.removeItem('timer_base_seconds');
@@ -721,28 +721,42 @@ const LiveMeeting: React.FC = () => {
 
             {/* Mega Timer - Minutes and Seconds ONLY */}
             <div className="flex gap-3 sm:gap-6 py-4">
-              {/* Minutes */}
-              <div className="flex flex-col items-center gap-2">
-                <div className={`flex h-32 sm:h-48 w-28 sm:w-40 items-center justify-center rounded-xl sm:rounded-2xl bg-white dark:bg-gray-800 border-4 ${isCounselMode ? 'border-orange-500 shadow-orange-500/20' : 'border-primary shadow-primary/20'} shadow-2xl`}>
-                  <p className={`${isCounselMode ? 'text-orange-500' : 'text-primary dark:text-blue-400'} text-6xl sm:text-8xl font-bold leading-none tracking-tight font-mono`}>
-                    {isCounselMode ? pad(Math.floor(counselSeconds / 60)) : pad(minutes)}
-                  </p>
+              {activeItem?.skip_timing && !isCounselMode ? (
+                // Non-timed items like Songs
+                <div className="flex flex-col items-center gap-2">
+                  <div className="flex h-32 sm:h-48 w-64 sm:w-[360px] items-center justify-center rounded-xl sm:rounded-2xl bg-[#f0f2f4] dark:bg-gray-800 border-2 border-transparent dark:border-gray-700">
+                    <p className="text-gray-400 dark:text-gray-500 text-2xl sm:text-4xl font-bold tracking-tight uppercase">
+                      Não Cronometrado
+                    </p>
+                  </div>
                 </div>
-                <p className={`${isCounselMode ? 'text-orange-500' : 'text-primary dark:text-blue-400'} text-sm font-bold uppercase tracking-wider`}>Minutos</p>
-              </div>
-              {/* Separator */}
-              <div className="flex h-32 sm:h-48 items-center justify-center pb-8">
-                <span className="text-6xl sm:text-7xl font-bold text-gray-300 dark:text-gray-600">:</span>
-              </div>
-              {/* Seconds */}
-              <div className="flex flex-col items-center gap-2">
-                <div className="flex h-32 sm:h-48 w-28 sm:w-40 items-center justify-center rounded-xl sm:rounded-2xl bg-[#f0f2f4] dark:bg-gray-800 border-2 border-transparent dark:border-gray-700">
-                  <p className="text-[#111318] dark:text-white text-6xl sm:text-8xl font-bold leading-none tracking-tight font-mono">
-                    {isCounselMode ? pad(counselSeconds % 60) : pad(seconds)}
-                  </p>
-                </div>
-                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider">Segundos</p>
-              </div>
+              ) : (
+                // Regular timer display
+                <>
+                  {/* Minutes */}
+                  <div className="flex flex-col items-center gap-2">
+                    <div className={`flex h-32 sm:h-48 w-28 sm:w-40 items-center justify-center rounded-xl sm:rounded-2xl bg-white dark:bg-gray-800 border-4 ${isCounselMode ? 'border-orange-500 shadow-orange-500/20' : 'border-primary shadow-primary/20'} shadow-2xl`}>
+                      <p className={`${isCounselMode ? 'text-orange-500' : 'text-primary dark:text-blue-400'} text-6xl sm:text-8xl font-bold leading-none tracking-tight font-mono`}>
+                        {isCounselMode ? pad(Math.floor(counselSeconds / 60)) : pad(minutes)}
+                      </p>
+                    </div>
+                    <p className={`${isCounselMode ? 'text-orange-500' : 'text-primary dark:text-blue-400'} text-sm font-bold uppercase tracking-wider`}>Minutos</p>
+                  </div>
+                  {/* Separator */}
+                  <div className="flex h-32 sm:h-48 items-center justify-center pb-8">
+                    <span className="text-6xl sm:text-7xl font-bold text-gray-300 dark:text-gray-600">:</span>
+                  </div>
+                  {/* Seconds */}
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="flex h-32 sm:h-48 w-28 sm:w-40 items-center justify-center rounded-xl sm:rounded-2xl bg-[#f0f2f4] dark:bg-gray-800 border-2 border-transparent dark:border-gray-700">
+                      <p className="text-[#111318] dark:text-white text-6xl sm:text-8xl font-bold leading-none tracking-tight font-mono">
+                        {isCounselMode ? pad(counselSeconds % 60) : pad(seconds)}
+                      </p>
+                    </div>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider">Segundos</p>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Primary Controls */}
@@ -750,8 +764,8 @@ const LiveMeeting: React.FC = () => {
               <div className="flex gap-3 w-full sm:w-auto flex-1">
                 <button
                   onClick={handleStart}
-                  className={`flex flex-1 min-w-0 h-14 sm:h-16 cursor-pointer items-center justify-center gap-2 sm:gap-3 rounded-xl sm:rounded-2xl bg-green-600 hover:bg-green-700 text-white shadow-lg transition-all active:scale-95 ${isRunning ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  disabled={isRunning}
+                  className={`flex flex-1 min-w-0 h-14 sm:h-16 cursor-pointer items-center justify-center gap-2 sm:gap-3 rounded-xl sm:rounded-2xl bg-green-600 hover:bg-green-700 text-white shadow-lg transition-all active:scale-95 ${(isRunning || (activeItem?.skip_timing && !isCounselMode)) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={isRunning || (activeItem?.skip_timing && !isCounselMode)}
                 >
                   <span className="material-symbols-outlined text-[24px] sm:text-[28px]">play_arrow</span>
                   <span className="text-lg sm:text-xl font-bold">Iniciar</span>
@@ -759,8 +773,8 @@ const LiveMeeting: React.FC = () => {
 
                 <button
                   onClick={handlePause}
-                  className={`flex flex-1 min-w-0 h-14 sm:h-16 cursor-pointer items-center justify-center gap-2 sm:gap-3 rounded-xl sm:rounded-2xl bg-yellow-500 hover:bg-yellow-600 text-white shadow-lg transition-all active:scale-95 ${!isRunning ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  disabled={!isRunning}
+                  className={`flex flex-1 min-w-0 h-14 sm:h-16 cursor-pointer items-center justify-center gap-2 sm:gap-3 rounded-xl sm:rounded-2xl bg-yellow-500 hover:bg-yellow-600 text-white shadow-lg transition-all active:scale-95 ${(!isRunning || (activeItem?.skip_timing && !isCounselMode)) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={!isRunning || (activeItem?.skip_timing && !isCounselMode)}
                 >
                   <span className="material-symbols-outlined text-[24px] sm:text-[28px]">pause</span>
                   <span className="text-lg sm:text-xl font-bold">Pausar</span>
