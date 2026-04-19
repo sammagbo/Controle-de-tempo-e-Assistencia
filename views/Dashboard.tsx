@@ -137,6 +137,7 @@ const Dashboard: React.FC = () => {
         week_id: weekId,
         meeting_day: meetingDay,
         started_at: new Date().toISOString(),
+        user_id: user?.id,
       };
 
       console.log('Creating meeting with data:', meetingData);
