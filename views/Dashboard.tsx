@@ -207,11 +207,14 @@ const Dashboard: React.FC = () => {
       } else if (data) {
         setPeriods(data);
         if (data.length > 0) {
-          // Auto-select the period containing the current month
-          const currentMonth = new Date().getMonth(); // 0-indexed
-          const periodIndex = Math.floor(currentMonth / 2); // 0=Jan-Feb, 1=Mar-Apr, etc.
-          const bestPeriod = data[periodIndex] ?? data[data.length - 1];
-          setSelectedPeriod(bestPeriod.id);
+          // Find the period that contains the current month by name
+          const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+            'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+          const currentMonthName = monthNames[new Date().getMonth()];
+          const currentPeriod = data.find(p =>
+            p.name.toLowerCase().includes(currentMonthName.toLowerCase())
+          );
+          setSelectedPeriod((currentPeriod ?? data[0]).id);
         }
       }
       setLoadingPeriods(false);
