@@ -207,7 +207,11 @@ const Dashboard: React.FC = () => {
       } else if (data) {
         setPeriods(data);
         if (data.length > 0) {
-          setSelectedPeriod(data[0].id);
+          // Auto-select the period containing the current month
+          const currentMonth = new Date().getMonth(); // 0-indexed
+          const periodIndex = Math.floor(currentMonth / 2); // 0=Jan-Feb, 1=Mar-Apr, etc.
+          const bestPeriod = data[periodIndex] ?? data[data.length - 1];
+          setSelectedPeriod(bestPeriod.id);
         }
       }
       setLoadingPeriods(false);
