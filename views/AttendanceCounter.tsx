@@ -1,14 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
+import { validateAttendanceCount } from '../lib/validation';
+import type { Attendance } from '../types';
 
-interface AttendanceRecord {
-  id: string;
-  presencial: number;
-  zoom: number;
-  created_at: string;
-  meeting_id?: string;
-}
+type AttendanceRecord = Pick<Attendance, 'id' | 'presencial' | 'zoom' | 'created_at'> & { meeting_id?: string };
 
 const AttendanceCounter: React.FC = () => {
   const navigate = useNavigate();
@@ -98,6 +94,10 @@ const AttendanceCounter: React.FC = () => {
 
   const saveAttendance = async () => {
     if (saving) return;
+    const presencialError = validateAttendanceCount(presencial);
+    const zoomError = validateAttendanceCount(zoom);
+    if (presencialError) { alert(presencialError); return; }
+    if (zoomError) { alert(zoomError); return; }
     setSaving(true);
 
     const activeMeetingId = localStorage.getItem('active_meeting_id');

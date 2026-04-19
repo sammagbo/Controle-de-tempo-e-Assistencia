@@ -1,23 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { MEETING_SECTIONS, SECTION_COLORS, SectionKey } from '../lib/meetingTemplate';
+import { MEETING_SECTIONS, SECTION_COLORS } from '../lib/meetingTemplate';
 import { useMainTimer } from '../lib/hooks/useMainTimer';
 import { useCounselTimer } from '../lib/hooks/useCounselTimer';
+import type { AgendaItem } from '../types';
+import { validateAssignedNames } from '../lib/validation';
 
-interface LiveAgendaItem {
-  id: string;
-  title: string;
-  estimated_minutes: number;
-  position: number;
-  status: 'completed' | 'active' | 'upcoming';
-  actual_seconds: number;
-  section: SectionKey;
-  allows_comments: boolean;
-  requires_post_comment: boolean;
-  assigned_names?: string;
-  skip_timing?: boolean;
-}
+type LiveAgendaItem = AgendaItem;
 
 const pad = (n: number) => n.toString().padStart(2, '0');
 
@@ -244,9 +234,11 @@ const LiveMeeting: React.FC = () => {
   const saveEditedName = async () => {
     const item = items[activeIndex];
     if (!item) return;
-    const { error } = await supabase
+    const validationError = validateAssignedNames(editingNameValue);
+    if (validationError) { alert(validationError); return; }
+    const { error: dbError } = await supabase
       .from('agenda_items').update({ assigned_names: editingNameValue }).eq('id', item.id);
-    if (error) { alert('Erro ao salvar nome.'); return; }
+    if (dbError) { alert('Erro ao salvar nome.'); return; }
     const newItems = [...items];
     newItems[activeIndex].assigned_names = editingNameValue;
     setItems(newItems);

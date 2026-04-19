@@ -1,24 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CURRENT_USER } from '../types';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../lib/AuthContext';
 import { t } from '../lib/translations';
-import { getCurrentWeekSchedule, isCurrentWeek as checkIsCurrentWeek, getAllScheduleWeeks } from '../lib/data/officialSchedule2026';
+import { getCurrentWeekSchedule } from '../lib/data/officialSchedule2026';
 import { seedWeeks } from '../lib/seedWeeks';
-
-interface Period {
-  id: string;
-  name: string;
-}
-
-interface Week {
-  id: string;
-  label: string;
-  date_range: string;
-  theme: string;
-  status?: string;
-}
+import type { Period, Week } from '../types';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();

@@ -2,16 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { MEETING_SECTIONS, SECTION_COLORS, SectionKey } from '../lib/meetingTemplate';
-
-interface AgendaItem {
-    id: string;
-    title: string;
-    estimated_minutes: number;
-    actual_seconds: number;
-    position: number;
-    status: string;
-    section: SectionKey;
-}
+import type { AgendaItem } from '../types';
 
 const DisplayMode: React.FC = () => {
     const navigate = useNavigate();

@@ -3,31 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { t } from '../lib/translations';
 import { MEETING_SECTIONS, SECTION_COLORS, SectionKey } from '../lib/meetingTemplate';
+import type { AgendaItem, MeetingWithWeek } from '../types';
 
-interface MeetingHistoryItem {
-      id: string;
-      week_id: string;
-      total_duration_seconds: number;
-      is_active: boolean;
-      created_at: string;
-      week?: {
-            label: string;
-            date_range: string;
-            period?: {
-                  name: string;
-            };
-      };
-}
-
-interface AgendaItem {
-      id: string;
-      title: string;
-      estimated_minutes: number;
-      actual_seconds: number;
-      status: string;
-      section: SectionKey;
-      assigned_names?: string;
-}
+type MeetingHistoryItem = MeetingWithWeek & { is_active?: boolean };
 
 const MeetingHistory: React.FC = () => {
       const navigate = useNavigate();

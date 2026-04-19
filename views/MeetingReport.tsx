@@ -4,39 +4,12 @@ import { supabase } from '../lib/supabaseClient';
 import { MEETING_SECTIONS, SECTION_COLORS, SectionKey } from '../lib/meetingTemplate';
 import html2canvas from 'html2canvas';
 import { generateMeetingPDF } from '../lib/pdfGenerator';
-
-interface AgendaItem {
-  id: string;
-  title: string;
-  estimated_minutes: number;
-  actual_seconds: number;
-  position: number;
-  status: string;
-  section: SectionKey;
-  assigned_names?: string;
-}
-
-interface MeetingData {
-  id: string;
-  meeting_day: string;
-  started_at: string;
-  finished_at: string;
-  total_duration_seconds: number;
-  president?: string;
-  week?: {
-    label: string;
-    date_range: string;
-    theme: string;
-    period?: {
-      name: string;
-    };
-  };
-}
+import type { AgendaItem, MeetingWithWeek, Comment, Attendance } from '../types';
 
 const MeetingReport: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [meeting, setMeeting] = useState<MeetingData | null>(null);
+  const [meeting, setMeeting] = useState<MeetingWithWeek | null>(null);
   const [agendaItems, setAgendaItems] = useState<AgendaItem[]>([]);
   const [attendance, setAttendance] = useState({ total: 0, presencial: 0, zoom: 0 });
   const [commentsCount, setCommentsCount] = useState(0);
@@ -85,7 +58,7 @@ const MeetingReport: React.FC = () => {
           weekData = week;
         }
 
-        const transformedMeeting: MeetingData = {
+        const transformedMeeting: MeetingWithWeek = {
           ...meetingData,
           week: weekData || undefined
         };
