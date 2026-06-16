@@ -9,6 +9,12 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       host: '0.0.0.0',
+      proxy: {
+        '/api': {
+          target: 'http://localhost:8080',
+          changeOrigin: true
+        }
+      }
     },
     plugins: [
       react(),
@@ -37,10 +43,10 @@ export default defineConfig(({ mode }) => {
           globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
           runtimeCaching: [
             {
-              urlPattern: ({ url }) => url.origin.includes('supabase.co'),
+              urlPattern: ({ url }) => url.pathname.startsWith('/api'),
               handler: 'NetworkFirst',
               options: {
-                cacheName: 'supabase-api-cache',
+                cacheName: 'api-cache',
                 expiration: {
                   maxEntries: 50,
                   maxAgeSeconds: 60 * 60 * 24 // 1 day

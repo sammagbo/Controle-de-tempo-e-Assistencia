@@ -1,6 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from './supabaseClient';
-import { User, Session } from '@supabase/supabase-js';
+import { api } from './apiClient';
+
+export interface User {
+      id: string; // no Spring usamos o email como identificador primário neste contexto
+      email: string;
+}
+
+export interface Session {
+      user: User;
+}
 
 interface AuthContextType {
       user: User | null;
@@ -19,35 +27,60 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const [loading, setLoading] = useState(true);
 
       useEffect(() => {
-            // Check active session
-            supabase.auth.getSession().then(({ data: { session } }) => {
-                  setSession(session);
-                  setUser(session?.user ?? null);
-                  setLoading(false);
-            });
+            // Check active session against our Spring Boot backend
+            const checkSession = async () => {
+                  try {
+                        const data = await api.get('/api/v1/auth/me');
+                        if (data && data.email) {
+                              const currentUser = { id: data.email, email: data.email };
+                              setUser(currentUser);
+                              setSession({ user: currentUser });
+                        } else {
+                              setUser(null);
+                              setSession(null);
+                        }
+                  } catch (error) {
+                        setUser(null);
+                        setSession(null);
+                  } finally {
+                        setLoading(false);
+                  }
+            };
 
-            // Listen for auth changes
-            const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-                  setSession(session);
-                  setUser(session?.user ?? null);
-                  setLoading(false);
-            });
-
-            return () => subscription.unsubscribe();
+            checkSession();
       }, []);
 
       const signIn = async (email: string, password: string) => {
-            const { error } = await supabase.auth.signInWithPassword({ email, password });
-            return { error: error as Error | null };
+            try {
+                  await api.post('/api/v1/auth/login', { email, password });
+                  // Após o login, vamos checar a sessão novamente
+                  const data = await api.get('/api/v1/auth/me');
+                  if (data && data.email) {
+                        const currentUser = { id: data.email, email: data.email };
+                        setUser(currentUser);
+                        setSession({ user: currentUser });
+                  }
+                  return { error: null };
+            } catch (error: any) {
+                  return { error: new Error(error.message || 'Login falhou') };
+            }
       };
 
       const signUp = async (email: string, password: string) => {
-            const { error } = await supabase.auth.signUp({ email, password });
-            return { error: error as Error | null };
+            // Se houver um endpoint de signUp real, usaremos ele aqui.
+            // Temporariamente mockado ou podemos simular um erro amigável
+            return { error: new Error("O registro está temporariamente desativado. Use uma conta existente.") };
       };
 
       const signOut = async () => {
-            await supabase.auth.signOut();
+            try {
+                  await api.post('/api/v1/auth/logout');
+            } catch (e) {
+                  console.error("Erro ao fazer logout", e);
+            } finally {
+                  setUser(null);
+                  setSession(null);
+            }
       };
 
       const value = {
