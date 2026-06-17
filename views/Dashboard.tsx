@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../lib/AuthContext';
+import { api } from '../lib/apiClient';
 import { t } from '../lib/translations';
 import { getCurrentWeekSchedule } from '../lib/data/officialSchedule2026';
-import { seedWeeks } from '../lib/seedWeeks';
 import type { Period, Week } from '../types';
 
 const Dashboard: React.FC = () => {
@@ -19,25 +18,9 @@ const Dashboard: React.FC = () => {
   const [creatingMeeting, setCreatingMeeting] = useState(false);
   const [suggestedWeekId, setSuggestedWeekId] = useState<string | null>(null);
   const currentWeekRef = useRef<HTMLDivElement>(null);
-  const [syncing, setSyncing] = useState(false);
 
-  // Function to sync database with hardcoded schedule
-  const handleSyncWeeks = async () => {
-    setSyncing(true);
-    try {
-      const result = await seedWeeks();
-      if (result.success) {
-        alert('✅ Semanas sincronizadas com sucesso! Recarregando...');
-        window.location.reload();
-      } else {
-        alert('❌ Erro ao sincronizar: ' + (result.error?.message || 'Erro desconhecido'));
-      }
-    } catch (err) {
-      alert('❌ Erro: ' + String(err));
-    } finally {
-      setSyncing(false);
-    }
-  };
+
+
 
   // Helper function to check if today falls within a week's date range
   const findCurrentWeek = (weeksList: Week[]): string | null => {
@@ -113,50 +96,22 @@ const Dashboard: React.FC = () => {
   };
 
   const handleStartMeeting = async (weekId: string, meetingDay: string) => {
-    if (!weekId || !meetingDay) {
-      alert('Please select a week and day.');
+    if (!weekId) {
+      alert('Please select a week.');
       return;
     }
-
     setCreatingMeeting(true);
     try {
-      const meetingData = {
-        week_id: weekId,
-        meeting_day: meetingDay,
-        started_at: new Date().toISOString(),
-        user_id: user?.id,
-      };
-
-      console.log('Creating meeting with data:', meetingData);
-
-      const { data, error } = await supabase
-        .from('meetings')
-        .insert(meetingData)
-        .select('id')
-        .single();
-
-      if (error) {
-        console.error('Supabase error creating meeting:', error);
-        alert(`Failed to create meeting: ${error.message}`);
-        return;
-      }
-
+      const data = await api.post('/api/v1/meetings', { week_id: weekId });
       if (!data || !data.id) {
-        console.error('No meeting ID returned from Supabase');
         alert('Failed to create meeting: No ID returned.');
         return;
       }
-
-      console.log('Meeting created successfully with ID:', data.id);
-
-      // Store meeting_id for use in SetupSession, LiveMeeting, Attendance, Comments
       localStorage.setItem('active_meeting_id', data.id);
-
-      // Navigate to setup
       navigate('/setup');
-    } catch (err) {
-      console.error('Unexpected error creating meeting:', err);
-      alert('An unexpected error occurred. Please try again.');
+    } catch (err: any) {
+      console.error('Error creating meeting:', err);
+      alert(`Failed to create meeting: ${err.message || 'Unexpected error'}`);
     } finally {
       setCreatingMeeting(false);
       setSelectingDayForWeek(null);
@@ -165,48 +120,28 @@ const Dashboard: React.FC = () => {
 
 
 
-  // Fetch periods on mount (only periods that have weeks)
+  // Fetch periods on mount
   useEffect(() => {
     const fetchPeriods = async () => {
       setLoadingPeriods(true);
-
-      // First get all period IDs that have weeks
-      const { data: weeksData } = await supabase
-        .from('weeks')
-        .select('period_id');
-
-      const periodIdsWithWeeks = [...new Set(weeksData?.map(w => w.period_id).filter(Boolean) || [])];
-
-      if (periodIdsWithWeeks.length === 0) {
-        setPeriods([]);
-        setLoadingPeriods(false);
-        return;
-      }
-
-      // Then fetch only those periods
-      const { data, error } = await supabase
-        .from('periods')
-        .select('id, name')
-        .in('id', periodIdsWithWeeks);
-
-      if (error) {
-        console.error('Error fetching periods:', error);
-      } else if (data) {
-        setPeriods(data);
-        if (data.length > 0) {
-          // Find the period that contains the current month by name
+      try {
+        const data = await api.get('/api/v1/dashboard/periods');
+        const list: Period[] = data || [];
+        setPeriods(list);
+        if (list.length > 0) {
           const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
             'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
           const currentMonthName = monthNames[new Date().getMonth()];
-          const currentPeriod = data.find(p =>
-            p.name.toLowerCase().includes(currentMonthName.toLowerCase())
-          );
-          setSelectedPeriod((currentPeriod ?? data[0]).id);
+          const currentPeriod = list.find(p => p.name.toLowerCase().includes(currentMonthName.toLowerCase()));
+          setSelectedPeriod((currentPeriod ?? list[0]).id);
         }
+      } catch (err) {
+        console.error('Error fetching periods:', err);
+        setPeriods([]);
+      } finally {
+        setLoadingPeriods(false);
       }
-      setLoadingPeriods(false);
     };
-
     fetchPeriods();
   }, []);
 
@@ -217,28 +152,21 @@ const Dashboard: React.FC = () => {
       setSuggestedWeekId(null);
       return;
     }
-
     const fetchWeeks = async () => {
       setLoadingWeeks(true);
-      const { data, error } = await supabase
-        .from('weeks')
-        .select('id, label, date_range, theme')
-        .eq('period_id', selectedPeriod)
-        .order('label', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching weeks:', error);
+      try {
+        const data = await api.get(`/api/v1/dashboard/weeks?periodId=${selectedPeriod}`);
+        const list: Week[] = data || [];
+        setWeeks(list);
+        setSuggestedWeekId(findCurrentWeek(list));
+      } catch (err) {
+        console.error('Error fetching weeks:', err);
         setWeeks([]);
         setSuggestedWeekId(null);
-      } else if (data) {
-        setWeeks(data);
-        // Find and set the current week
-        const currentWeekId = findCurrentWeek(data);
-        setSuggestedWeekId(currentWeekId);
+      } finally {
+        setLoadingWeeks(false);
       }
-      setLoadingWeeks(false);
     };
-
     fetchWeeks();
   }, [selectedPeriod]);
 
@@ -412,20 +340,7 @@ const Dashboard: React.FC = () => {
           <button className="hidden md:flex items-center justify-center px-4 py-2.5 border border-[#dbdfe6] dark:border-[#4b5563] rounded-lg bg-white dark:bg-[#232d3d] text-[#111318] dark:text-white hover:bg-[#f0f2f4] dark:hover:bg-[#2a3441] transition-colors">
             <span className="material-symbols-outlined">filter_list</span>
           </button>
-          {/* Sync Database Button */}
-          <button
-            onClick={handleSyncWeeks}
-            disabled={syncing}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 border border-purple-500 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors disabled:opacity-50"
-            title="Sincronizar semanas com o calendário oficial"
-          >
-            <span className={`material-symbols-outlined ${syncing ? 'animate-spin' : ''}`}>
-              {syncing ? 'progress_activity' : 'sync'}
-            </span>
-            <span className="hidden md:inline text-sm font-medium">
-              {syncing ? 'Sincronizando...' : 'Sincronizar'}
-            </span>
-          </button>
+
         </div>
 
         {/* Meeting List */}

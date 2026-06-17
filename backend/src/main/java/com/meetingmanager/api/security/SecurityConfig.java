@@ -60,7 +60,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:4173")); // Vite dev server e preview
+        configuration.setAllowedOrigins(List.of(
+            "http://localhost:3000", // Vite dev server (porta configurada no vite.config.ts)
+            "http://localhost:3001",
+            "http://localhost:5173", // Vite dev server padrão
+            "http://localhost:4173"  // Vite preview
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

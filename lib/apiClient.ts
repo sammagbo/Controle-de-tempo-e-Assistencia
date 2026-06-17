@@ -26,30 +26,39 @@ async function request(url: string, options: RequestInit) {
       'Accept': 'application/json',
     },
     // Isto é fundamental para enviar e receber o Cookie JSESSIONID do Spring
-    credentials: 'include', 
+    credentials: 'include',
   };
 
   const response = await fetch(url, { ...defaultOptions, ...options });
 
+  // Read the body ONCE as text, then parse conditionally
+  const contentLength = response.headers.get('content-length');
+  const isNoBody = response.status === 204 || contentLength === '0';
+
   if (!response.ok) {
-    let errorMsg = 'An error occurred';
-    try {
-      const errorData = await response.json();
-      errorMsg = errorData.detail || errorData.error || errorData.message || `Status: ${response.status}`;
-    } catch (e) {
-      errorMsg = await response.text() || `Status: ${response.status}`;
+    let errorMsg = `Status: ${response.status}`;
+    if (!isNoBody) {
+      try {
+        const text = await response.text();
+        try {
+          const errorData = JSON.parse(text);
+          errorMsg = errorData.detail || errorData.error || errorData.message || errorMsg;
+        } catch {
+          if (text) errorMsg = text;
+        }
+      } catch {
+        // body unreadable — keep default errorMsg
+      }
     }
     throw new Error(errorMsg);
   }
 
-  // Handle empty responses
-  if (response.status === 204 || response.headers.get('content-length') === '0') {
-    return null;
-  }
+  if (isNoBody) return null;
 
   try {
-    return await response.json();
-  } catch (e) {
-    return null; // Return null if response is not JSON
+    const text = await response.text();
+    return text ? JSON.parse(text) : null;
+  } catch {
+    return null;
   }
 }
