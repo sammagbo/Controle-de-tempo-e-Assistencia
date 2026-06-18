@@ -1,9 +1,9 @@
 -- V2: Dados Iniciais (Seeds)
 
 -- Inserir usuário administrador inicial com UUID fixo 00000000-0000-0000-0000-000000000001
--- Password Hash para a senha 'password' utilizando BCrypt ($2a$10$wN1G.dInhJ4yZ5S7L.T8O.YcIf7DIs9xIfQJz2P9g7P.Y0s0H/2T6)
+-- Password Hash BCrypt verificado para a senha 'password' (bcrypt.checkpw validado)
 INSERT INTO users (id, email, password_hash)
-VALUES ('00000000-0000-0000-0000-000000000001', 'admin@meeting.local', '$2a$10$wN1G.dInhJ4yZ5S7L.T8O.YcIf7DIs9xIfQJz2P9g7P.Y0s0H/2T6');
+VALUES ('00000000-0000-0000-0000-000000000001', 'admin@meeting.local', '$2a$10$uW8MHNQlRWvWrHt1pph6oecXtDeASBbYEyFtoRH5hRh4/vuzCCOg.');
 
 -- Inserir Período de Janeiro - Fevereiro 2026 com UUID fixo para as semanas referenciarem
 INSERT INTO periods (id, name, start_date, end_date)
