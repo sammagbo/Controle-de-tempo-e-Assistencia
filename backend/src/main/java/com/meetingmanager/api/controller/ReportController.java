@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.transaction.annotation.Transactional;
 
 @RestController
 @RequestMapping("/api/v1/reports")
@@ -27,6 +28,7 @@ public class ReportController {
         this.userRepository = userRepository;
     }
 
+    @Transactional(readOnly = true)
     @GetMapping("/history")
     public ResponseEntity<List<MeetingResponse>> getHistory(Authentication authentication) {
         User user = userRepository.findByEmail(authentication.getName())
@@ -41,6 +43,7 @@ public class ReportController {
         return ResponseEntity.ok(history);
     }
 
+    @Transactional(readOnly = true)
     @GetMapping("/meetings/{id}")
     public ResponseEntity<MeetingResponse> getMeetingReport(@PathVariable UUID id, Authentication authentication) {
         Meeting meeting = meetingRepository.findById(id)
