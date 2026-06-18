@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { api } from '../lib/apiClient';
 import {
       LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
       BarChart, Bar, Legend
@@ -15,6 +15,15 @@ interface MeetingStats {
       attendance_zoom: number;
 }
 
+// Resposta de /api/v1/reports/history (apenas os campos usados aqui; o resto do
+// MeetingResponse do backend é ignorado)
+interface HistoryMeeting {
+  id: string;
+  started_at?: string;
+  total_duration_seconds?: number;
+  attendance?: { count?: number; presencial?: number; zoom?: number };
+}
+
 const Statistics: React.FC = () => {
       const navigate = useNavigate();
       const [loading, setLoading] = useState(true);
@@ -27,40 +36,36 @@ const Statistics: React.FC = () => {
       const fetchStats = async () => {
             setLoading(true);
             try {
-                  // Fetch last 10 meetings
-                  const { data: meetings, error } = await supabase
-                        .from('meetings')
-                        .select(`
-          id,
-          started_at,
-          total_duration_seconds,
-          attendance (
-            count,
-            presencial,
-            zoom
-          )
-        `)
-                        .order('started_at', { ascending: true })
-                        .limit(10);
+                  // Busca as reuniões finalizadas no backend próprio (substitui o Supabase)
+                  const data = await api.get('/api/v1/reports/history');
+                  const meetings: HistoryMeeting[] = data || [];
 
-                  if (error) throw error;
+                  // O backend retorna sem ordem e sem limite: ordenar por started_at (asc) e pegar as 10 últimas
+                  const lastTen = [...meetings]
+                        .sort((a, b) => {
+                              const ta = a.started_at ? new Date(a.started_at).getTime() : 0;
+                              const tb = b.started_at ? new Date(b.started_at).getTime() : 0;
+                              return ta - tb;
+                        })
+                        .slice(-10);
 
-                  if (meetings) {
-                        const formattedData = meetings.map(m => {
-                              const att = Array.isArray(m.attendance) ? m.attendance[0] : m.attendance;
-                              return {
-                                    id: m.id,
-                                    date: new Date(m.started_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-                                    total_duration_seconds: m.total_duration_seconds || 0,
-                                    attendance_total: att?.count || 0,
-                                    attendance_presencial: att?.presencial || 0,
-                                    attendance_zoom: att?.zoom || 0
-                              };
-                        });
-                        setData(formattedData);
-                  }
+                  const formattedData = lastTen.map((m) => {
+                        const att = m.attendance;
+                        return {
+                              id: m.id,
+                              date: m.started_at
+                                    ? new Date(m.started_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+                                    : '--',
+                              total_duration_seconds: m.total_duration_seconds || 0,
+                              attendance_total: att?.count || 0,
+                              attendance_presencial: att?.presencial || 0,
+                              attendance_zoom: att?.zoom || 0,
+                        };
+                  });
+                  setData(formattedData);
             } catch (err) {
                   console.error('Error fetching stats:', err);
+                  setData([]);
             } finally {
                   setLoading(false);
             }
