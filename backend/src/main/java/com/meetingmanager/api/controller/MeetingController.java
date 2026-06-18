@@ -42,6 +42,12 @@ public class MeetingController {
         return ResponseEntity.ok(DtoMapper.toMeetingResponse(meeting));
     }
 
+    @PutMapping("/{id}/agenda")
+    public ResponseEntity<Void> setupAgenda(@PathVariable UUID id, @RequestBody MeetingSetupRequest request, Authentication authentication) {
+        meetingService.setupMeeting(id, request, authentication.getName());
+        return ResponseEntity.ok().build();
+    }
+
     @PutMapping("/{id}/attendance")
     public ResponseEntity<AttendanceResponse> updateAttendance(@PathVariable UUID id, @RequestBody AttendanceRequest request) {
         return ResponseEntity.ok(DtoMapper.toAttendanceResponse(attendanceService.updateAttendance(id, request)));

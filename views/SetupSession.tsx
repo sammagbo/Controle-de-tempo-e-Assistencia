@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { api } from '../lib/apiClient';
 import {
   DEFAULT_MEETING_TEMPLATE,
   MEETING_SECTIONS,
@@ -402,20 +402,7 @@ const SetupSession: React.FC = () => {
 
     setSaving(true);
     try {
-      // Salvar presidente na reunião
-      if (presidentName.trim()) {
-        const { error: meetingError } = await supabase
-          .from('meetings')
-          .update({ president: presidentName })
-          .eq('id', meetingId);
-
-        if (meetingError) {
-          console.error('Error updating meeting president:', meetingError);
-        }
-      }
-
       const agendaItems = items.map((item, index) => ({
-        meeting_id: meetingId,
         title: item.title,
         estimated_minutes: item.estimatedMinutes,
         position: index + 1,
@@ -425,31 +412,27 @@ const SetupSession: React.FC = () => {
         allows_comments: item.allowsComments,
         requires_post_comment: item.requiresPostComment,
         assigned_names: item.assignedNames || '',
-        skip_timing: item.skipTiming || false, // v3.0: Cânticos não são cronometrados
+        skip_timing: item.skipTiming || false,
       }));
 
-      const { error } = await supabase
-        .from('agenda_items')
-        .insert(agendaItems);
+      await api.put(`/api/v1/meetings/${meetingId}/agenda`, {
+        president: presidentName.trim() || null,
+        agenda_items: agendaItems,
+      });
 
-      if (error) {
-        console.error('Error saving agenda items:', error);
-        alert('Erro ao salvar agenda. Tente novamente.');
-      } else {
-        // Clear all timer state before starting new meeting
-        localStorage.removeItem('timer_start_timestamp');
-        localStorage.removeItem('timer_base_seconds');
-        localStorage.removeItem('timer_active_item_id');
-        localStorage.removeItem('counsel_mode');
-        localStorage.removeItem('counsel_start_timestamp');
-        localStorage.removeItem('counsel_base_seconds');
-        localStorage.removeItem('counsel_item_title');
-        localStorage.removeItem('counsel_item_id');
+      localStorage.removeItem('timer_start_timestamp');
+      localStorage.removeItem('timer_base_seconds');
+      localStorage.removeItem('timer_active_item_id');
+      localStorage.removeItem('counsel_mode');
+      localStorage.removeItem('counsel_start_timestamp');
+      localStorage.removeItem('counsel_base_seconds');
+      localStorage.removeItem('counsel_item_title');
+      localStorage.removeItem('counsel_item_id');
 
-        navigate('/live');
-      }
-    } catch (err) {
-      console.error('Error saving agenda items:', err);
+      navigate('/live');
+    } catch (err: any) {
+      console.error('Error saving agenda:', err);
+      alert(`Erro ao salvar agenda: ${err.message || 'Tente novamente.'}`);
     } finally {
       setSaving(false);
     }
