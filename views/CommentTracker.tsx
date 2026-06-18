@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { api } from '../lib/apiClient';
 
 const CommentTracker: React.FC = () => {
   const navigate = useNavigate();
@@ -52,18 +52,13 @@ const CommentTracker: React.FC = () => {
     const returnToNext = localStorage.getItem('return_to_next') === 'true';
 
     try {
-      const { error } = await supabase
-        .from('comments')
-        .insert({
-          meeting_id: meetingId,
-          agenda_item_id: agendaItemId || null,
-          duration_seconds: timerRef.current,
-          comment_type: returnToNext ? 'post_student' : 'manual',
-        });
-
-      if (error) {
-        console.error('Error saving comment:', error);
-      }
+      // Envia o comentário ao backend próprio (substitui o Supabase)
+      await api.post('/api/v1/comments', {
+        meeting_id: meetingId,
+        agenda_item_id: agendaItemId || null,
+        duration_seconds: timerRef.current,
+        comment_type: returnToNext ? 'post_student' : 'manual',
+      });
     } catch (err) {
       console.error('Error saving comment:', err);
     } finally {
