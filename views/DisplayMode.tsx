@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { api } from '../lib/apiClient';
 import { MEETING_SECTIONS, SECTION_COLORS, SectionKey } from '../lib/meetingTemplate';
 import type { AgendaItem } from '../types';
 
@@ -23,19 +23,20 @@ const DisplayMode: React.FC = () => {
 
         setMeetingActive(true);
 
-        const { data, error } = await supabase
-            .from('agenda_items')
-            .select('id, title, estimated_minutes, actual_seconds, position, status, section')
-            .eq('meeting_id', meetingId)
-            .eq('status', 'active')
-            .single();
-
-        if (error) {
-            console.error('Error fetching active item:', error);
-        } else if (data) {
-            setCurrentItem(data as AgendaItem);
-            setElapsedSeconds(data.actual_seconds || 0);
-            setIsRunning(true);
+        try {
+            const meeting = await api.get('/api/v1/meetings/active');
+            const items: any[] = meeting?.agenda_items || [];
+            const active = items.find((i) => i.status === 'active');
+            if (active) {
+                setCurrentItem(active as AgendaItem);
+                setElapsedSeconds(active.actual_seconds || 0);
+                setIsRunning(true);
+            } else {
+                setCurrentItem(null);
+                setIsRunning(false);
+            }
+        } catch (err) {
+            console.error('Error fetching active item:', err);
         }
 
         setLoading(false);
