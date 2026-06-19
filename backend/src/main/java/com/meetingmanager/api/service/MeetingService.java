@@ -37,7 +37,9 @@ public class MeetingService {
         meeting.setMeetingDay("Terça");
         // A agenda é montada e salva depois, em setupMeeting (tela SetupSession)
         meeting = meetingRepository.save(meeting);
-        meeting.getAgendaItems().size(); // Inicializa a coleção para evitar LazyInitializationException
+        meeting.getAgendaItems().size(); // Inicializa as coleções para evitar LazyInitializationException
+        meeting.getComments().size();
+        if (meeting.getAttendance() != null) meeting.getAttendance().getCount();
         return meeting;
     }
 
@@ -51,7 +53,9 @@ public class MeetingService {
                 .findFirst()
                 .orElseThrow(() -> new EntityNotFoundException("No active meeting found"));
         
-        meeting.getAgendaItems().size(); // Inicializa a coleção para evitar LazyInitializationException
+        meeting.getAgendaItems().size(); // Inicializa as coleções para evitar LazyInitializationException
+        meeting.getComments().size();
+        if (meeting.getAttendance() != null) meeting.getAttendance().getCount();
         return meeting;
     }
 
@@ -69,7 +73,9 @@ public class MeetingService {
         if (request.president() != null) meeting.setPresident(request.president());
 
         meeting = meetingRepository.save(meeting);
-        meeting.getAgendaItems().size(); // Inicializa a coleção para evitar LazyInitializationException
+        meeting.getAgendaItems().size(); // Inicializa as coleções para evitar LazyInitializationException
+        meeting.getComments().size();
+        if (meeting.getAttendance() != null) meeting.getAttendance().getCount();
         return meeting;
     }
 
