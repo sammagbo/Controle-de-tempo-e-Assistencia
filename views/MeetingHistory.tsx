@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { api } from '../lib/apiClient';
 import { t } from '../lib/translations';
 import { MEETING_SECTIONS, SECTION_COLORS, SectionKey } from '../lib/meetingTemplate';
-import type { AgendaItem, MeetingWithWeek } from '../types';
+import type { AgendaItem } from '../types';
 
-type MeetingHistoryItem = MeetingWithWeek & { is_active?: boolean };
+interface MeetingHistoryItem {
+  id: string;
+  week_id?: string;
+  started_at?: string;
+  total_duration_seconds?: number;
+  agenda_items?: AgendaItem[];
+  _periodName?: string;
+  _dateRange?: string;
+}
 
 const MeetingHistory: React.FC = () => {
       const navigate = useNavigate();
@@ -21,56 +29,58 @@ const MeetingHistory: React.FC = () => {
 
       const fetchMeetings = async () => {
             try {
-                  const { data, error } = await supabase
-                        .from('meetings')
-                        .select(`
-          id,
-          week_id,
-          total_duration_seconds,
-          is_active,
-          created_at,
-          week:weeks (
-            label,
-            date_range,
-            period:periods (
-              name
-            )
-          )
-        `)
-                        .eq('is_active', false)
-                        .order('created_at', { ascending: false })
-                        .limit(50);
+                  const [history, periods] = await Promise.all([
+                        api.get('/api/v1/reports/history'),
+                        api.get('/api/v1/dashboard/periods'),
+                  ]);
+                  const periodList: any[] = periods || [];
+                  const periodName: Record<string, string> = {};
+                  periodList.forEach((p) => { periodName[p.id] = p.name; });
 
-                  if (error) throw error;
-                  setMeetings(data || []);
+                  const weeksArrays = await Promise.all(
+                        periodList.map((p) => api.get(`/api/v1/dashboard/weeks?periodId=${p.id}`))
+                  );
+                  const weekInfo: Record<string, { dateRange: string; periodName: string }> = {};
+                  weeksArrays.forEach((weeks: any[], idx) => {
+                        const pName = periodName[periodList[idx].id] || 'Período';
+                        (weeks || []).forEach((w) => {
+                              weekInfo[w.id] = { dateRange: w.date_range || 'Semana', periodName: pName };
+                        });
+                  });
+
+                  const list: MeetingHistoryItem[] = (history || [])
+                        .sort((a: any, b: any) => {
+                              const ta = a.started_at ? new Date(a.started_at).getTime() : 0;
+                              const tb = b.started_at ? new Date(b.started_at).getTime() : 0;
+                              return tb - ta;
+                        })
+                        .slice(0, 50)
+                        .map((m: any) => ({
+                              ...m,
+                              _periodName: weekInfo[m.week_id]?.periodName || 'Período',
+                              _dateRange: weekInfo[m.week_id]?.dateRange || 'Semana',
+                        }));
+
+                  setMeetings(list);
             } catch (error) {
                   console.error('Error fetching meetings:', error);
+                  setMeetings([]);
             } finally {
                   setLoading(false);
             }
       };
 
-      const fetchMeetingDetails = async (meetingId: string) => {
-            setLoadingDetails(true);
-            try {
-                  const { data, error } = await supabase
-                        .from('agenda_items')
-                        .select('*')
-                        .eq('meeting_id', meetingId)
-                        .order('position');
-
-                  if (error) throw error;
-                  setAgendaItems(data || []);
-            } catch (error) {
-                  console.error('Error fetching agenda items:', error);
-            } finally {
-                  setLoadingDetails(false);
-            }
+      // agenda_items já vêm aninhados na reunião; sem 2ª chamada
+      const loadAgendaFromMeeting = (meeting: MeetingHistoryItem) => {
+            const items = [...(meeting.agenda_items || [])].sort(
+                  (a: any, b: any) => (a.position || 0) - (b.position || 0)
+            );
+            setAgendaItems(items);
       };
 
       const handleSelectMeeting = (meeting: MeetingHistoryItem) => {
             setSelectedMeeting(meeting);
-            fetchMeetingDetails(meeting.id);
+            loadAgendaFromMeeting(meeting);
       };
 
       const formatDuration = (seconds: number) => {
@@ -79,7 +89,8 @@ const MeetingHistory: React.FC = () => {
             return `${mins}:${secs.toString().padStart(2, '0')}`;
       };
 
-      const formatDate = (dateString: string) => {
+      const formatDate = (dateString?: string) => {
+            if (!dateString) return '--';
             return new Date(dateString).toLocaleDateString('pt-BR', {
                   day: '2-digit',
                   month: '2-digit',
@@ -140,17 +151,17 @@ const MeetingHistory: React.FC = () => {
                                                 >
                                                       <div className="flex items-center justify-between mb-2">
                                                             <span className="text-sm font-bold text-primary">
-                                                                  {(meeting.week as any)?.period?.name || 'Período'}
+                                                                   {meeting._periodName}
                                                             </span>
                                                             <span className="text-xs text-gray-500">
                                                                   {formatDuration(meeting.total_duration_seconds || 0)}
                                                             </span>
                                                       </div>
                                                       <p className="text-sm font-medium">
-                                                            {(meeting.week as any)?.date_range || 'Semana'}
+                                                             {meeting._dateRange}
                                                       </p>
                                                       <p className="text-xs text-gray-500 mt-1">
-                                                            {formatDate(meeting.created_at)}
+                                                             {formatDate(meeting.started_at)}
                                                       </p>
                                                 </button>
                                           ))}
@@ -167,10 +178,10 @@ const MeetingHistory: React.FC = () => {
                                                 <div className="flex items-center justify-between mb-4">
                                                       <div>
                                                             <h2 className="text-xl font-bold">
-                                                                  {(selectedMeeting.week as any)?.period?.name}
+                                                                   {selectedMeeting._periodName}
                                                             </h2>
                                                             <p className="text-gray-500">
-                                                                  {(selectedMeeting.week as any)?.date_range}
+                                                                   {selectedMeeting._dateRange}
                                                             </p>
                                                       </div>
                                                       <div className="text-right">
@@ -181,7 +192,7 @@ const MeetingHistory: React.FC = () => {
                                                       </div>
                                                 </div>
                                                 <p className="text-sm text-gray-500">
-                                                      {formatDate(selectedMeeting.created_at)}
+                                                       {formatDate(selectedMeeting.started_at)}
                                                 </p>
                                           </div>
 
