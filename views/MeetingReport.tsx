@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { api } from '../lib/apiClient';
 import { MEETING_SECTIONS, SECTION_COLORS, SectionKey } from '../lib/meetingTemplate';
 import html2canvas from 'html2canvas';
 import { generateMeetingPDF } from '../lib/pdfGenerator';
@@ -28,92 +28,48 @@ const MeetingReport: React.FC = () => {
 
     const fetchReportData = async () => {
       setLoading(true);
+      try {
+        const data = await api.get(`/api/v1/reports/meetings/${meetingId}`);
+        if (!data) { setLoading(false); return; }
 
-      // Fetch meeting data with week and period info
-      const { data: meetingData, error: meetingError } = await supabase
-        .from('meetings')
-        .select(`
-          id,
-          meeting_day,
-          started_at,
-          finished_at,
-          total_duration_seconds,
-          week_id,
-          president
-        `)
-        .eq('id', meetingId)
-        .single();
-
-      if (meetingError) {
-        console.error('Error fetching meeting:', meetingError);
-      } else if (meetingData) {
-        // Fetch week data separately if week_id exists
-        let weekData = null;
-        if (meetingData.week_id) {
-          const { data: week } = await supabase
-            .from('weeks')
-            .select('label, date_range, theme')
-            .eq('id', meetingData.week_id)
-            .single();
-          weekData = week;
+        // Resolve info da semana (label/date_range/theme) por week_id
+        let weekData: any = null;
+        if (data.week_id) {
+          const periods: any[] = (await api.get('/api/v1/dashboard/periods')) || [];
+          for (const p of periods) {
+            const weeks: any[] = (await api.get(`/api/v1/dashboard/weeks?periodId=${p.id}`)) || [];
+            const found = weeks.find((w) => w.id === data.week_id);
+            if (found) { weekData = { label: found.label, date_range: found.date_range, theme: found.theme }; break; }
+          }
         }
 
-        const transformedMeeting: MeetingWithWeek = {
-          ...meetingData,
-          week: weekData || undefined
-        };
-        setMeeting(transformedMeeting);
-      }
+        setMeeting({ ...data, week: weekData || undefined });
 
-      // Fetch agenda items
-      const { data: agendaData, error: agendaError } = await supabase
-        .from('agenda_items')
-        .select('id, title, estimated_minutes, actual_seconds, position, status, section, assigned_names')
-        .eq('meeting_id', meetingId)
-        .order('position', { ascending: true });
+        const items = [...(data.agenda_items || [])].sort(
+          (a: any, b: any) => (a.position || 0) - (b.position || 0)
+        );
+        setAgendaItems(items as AgendaItem[]);
 
-      if (agendaError) {
-        console.error('Error fetching agenda items:', agendaError);
-      } else if (agendaData) {
-        setAgendaItems(agendaData as AgendaItem[]);
-      }
+        const att = data.attendance;
+        if (att) {
+          setAttendance({ total: att.count || 0, presencial: att.presencial || 0, zoom: att.zoom || 0 });
+        }
 
-      // Fetch attendance
-      const { data: attendanceData } = await supabase
-        .from('attendance')
-        .select('count, presencial, zoom')
-        .eq('meeting_id', meetingId)
-        .maybeSingle();
-
-      if (attendanceData) {
-        setAttendance({
-          total: attendanceData.count || 0,
-          presencial: attendanceData.presencial || 0,
-          zoom: attendanceData.zoom || 0
-        });
-      }
-
-      // Fetch comments stats and build counsel times map
-      const { data: commentsData } = await supabase
-        .from('comments')
-        .select('duration_seconds, agenda_item_id, comment_type')
-        .eq('meeting_id', meetingId);
-
-      if (commentsData) {
-        setCommentsCount(commentsData.length);
-        setCommentsTotalSeconds(commentsData.reduce((sum, c) => sum + (c.duration_seconds || 0), 0));
-
-        // Build counsel times map (post_student comments per agenda item)
+        const comments: any[] = data.comments || [];
+        setCommentsCount(comments.length);
+        setCommentsTotalSeconds(comments.reduce((sum, c) => sum + (c.duration_seconds || 0), 0));
         const counselMap: Record<string, number> = {};
-        commentsData.forEach(comment => {
-          if (comment.comment_type === 'post_student' && comment.agenda_item_id) {
-            counselMap[comment.agenda_item_id] = (counselMap[comment.agenda_item_id] || 0) + (comment.duration_seconds || 0);
+        comments.forEach((c) => {
+          if (c.comment_type === 'post_student' && c.agenda_item_id) {
+            counselMap[c.agenda_item_id] = (counselMap[c.agenda_item_id] || 0) + (c.duration_seconds || 0);
           }
         });
         setCounselTimes(counselMap);
+      } catch (err) {
+        console.error('Error fetching report data:', err);
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     };
 
     fetchReportData();
