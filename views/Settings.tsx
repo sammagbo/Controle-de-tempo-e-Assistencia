@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
-import { supabase } from '../lib/supabaseClient';
+import { api } from '../lib/apiClient';
 import { generateMonthlyReportPDF, getAvailableMonths } from '../lib/monthlyReport';
 import { setupAutoSync, getQueueSize } from '../lib/offlineSync';
 
@@ -54,93 +54,67 @@ const Settings: React.FC = () => {
             try {
                   setExporting(true);
 
-                  // 1. Fetch All Meetings
-                  const { data: meetings, error: meetingsError } = await supabase
-                        .from('meetings')
-                        .select(`
-          id, 
-          meeting_day, 
-          started_at, 
-          finished_at, 
-          total_duration_seconds, 
-          president,
-          week:weeks(label, theme)
-        `)
-                        .order('started_at', { ascending: false });
+                  // Reunioes finalizadas (agenda_items e attendance ja vem aninhados)
+                  const meetings: any[] = (await api.get('/api/v1/reports/history')) || [];
 
-                  if (meetingsError) throw meetingsError;
+                  // Lookup de semana (label/theme) por week_id
+                  const weekInfo: Record<string, { label: string; theme: string }> = {};
+                  const periods: any[] = (await api.get('/api/v1/dashboard/periods')) || [];
+                  for (const p of periods) {
+                        const weeks: any[] = (await api.get(`/api/v1/dashboard/weeks?periodId=${p.id}`)) || [];
+                        weeks.forEach((w) => { weekInfo[w.id] = { label: w.label, theme: w.theme }; });
+                  }
 
-                  // 2. Fetch All Attendance
-                  const { data: attendance, error: attendanceError } = await supabase
-                        .from('attendance')
-                        .select('*')
-                        .order('created_at', { ascending: false });
+                  const sorted = [...meetings].sort((a, b) => {
+                        const ta = a.started_at ? new Date(a.started_at).getTime() : 0;
+                        const tb = b.started_at ? new Date(b.started_at).getTime() : 0;
+                        return tb - ta;
+                  });
 
-                  if (attendanceError) throw attendanceError;
-
-                  // 3. Fetch All Items (Agenda)
-                  const { data: items, error: itemsError } = await supabase
-                        .from('agenda_items')
-                        .select('*')
-                        .order('created_at', { ascending: false });
-
-                  if (itemsError) throw itemsError;
-
-                  // Format Data for Excel
-
-                  // Sheet 1: Resumo Reuniões
-                  const meetingsSheet = meetings?.map((m: any) => ({
+                  const meetingsSheet = sorted.map((m: any) => ({
                         ID: m.id,
-                        Semana: Array.isArray(m.week) ? m.week[0]?.label : m.week?.label,
-                        Tema: Array.isArray(m.week) ? m.week[0]?.theme : m.week?.theme,
+                        Semana: weekInfo[m.week_id]?.label || '',
+                        Tema: weekInfo[m.week_id]?.theme || '',
                         Dia: m.meeting_day,
                         Presidente: m.president,
                         Inicio: m.started_at ? new Date(m.started_at).toLocaleString('pt-BR') : '',
                         Fim: m.finished_at ? new Date(m.finished_at).toLocaleString('pt-BR') : '',
                         Duracao_Minutos: Math.floor((m.total_duration_seconds || 0) / 60)
-                  })) || [];
+                  }));
 
-                  // Sheet 2: Assistência Detalhada
-                  const attendanceSheet = attendance?.map(a => ({
-                        Data: new Date(a.created_at).toLocaleString('pt-BR'),
-                        Total: (a.presencial || 0) + (a.zoom || 0),
-                        Presencial: a.presencial || 0,
-                        Zoom: a.zoom || 0,
-                        ID_Reuniao: a.meeting_id
-                  })) || [];
+                  const attendanceSheet = sorted
+                        .filter((m: any) => m.attendance)
+                        .map((m: any) => ({
+                              Data: m.started_at ? new Date(m.started_at).toLocaleString('pt-BR') : '',
+                              Total: (m.attendance.presencial || 0) + (m.attendance.zoom || 0),
+                              Presencial: m.attendance.presencial || 0,
+                              Zoom: m.attendance.zoom || 0,
+                              ID_Reuniao: m.id
+                        }));
 
-                  // Sheet 3: Detalhe das Partes
-                  const itemsSheet = items?.map(i => ({
-                        Titulo: i.title,
-                        Designado: i.assigned_names,
-                        Secao: i.section,
-                        Minutos_Estimados: i.estimated_minutes,
-                        Minutos_Reais: Math.floor(i.actual_seconds / 60),
-                        Segundos_Reais: i.actual_seconds % 60,
-                        Status: i.status,
-                        ID_Reuniao: i.meeting_id
-                  })) || [];
+                  const itemsSheet = sorted.flatMap((m: any) =>
+                        (m.agenda_items || []).map((i: any) => ({
+                              Titulo: i.title,
+                              Designado: i.assigned_names,
+                              Secao: i.section,
+                              Minutos_Estimados: i.estimated_minutes,
+                              Minutos_Reais: Math.floor((i.actual_seconds || 0) / 60),
+                              Segundos_Reais: (i.actual_seconds || 0) % 60,
+                              Status: i.status,
+                              ID_Reuniao: m.id
+                        }))
+                  );
 
-                  // Create Workbook
                   const wb = XLSX.utils.book_new();
-
-                  const wsMeetings = XLSX.utils.json_to_sheet(meetingsSheet);
-                  XLSX.utils.book_append_sheet(wb, wsMeetings, "Reuniões");
-
-                  const wsAttendance = XLSX.utils.json_to_sheet(attendanceSheet);
-                  XLSX.utils.book_append_sheet(wb, wsAttendance, "Assistência");
-
-                  const wsItems = XLSX.utils.json_to_sheet(itemsSheet);
-                  XLSX.utils.book_append_sheet(wb, wsItems, "Partes");
-
-                  // Download
+                  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(meetingsSheet), "Reuniões");
+                  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(attendanceSheet), "Assistência");
+                  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(itemsSheet), "Partes");
                   XLSX.writeFile(wb, `Backup_MeetingManager_${new Date().toISOString().split('T')[0]}.xlsx`);
 
                   alert('Backup baixado com sucesso!');
-
             } catch (error: any) {
                   console.error('Export error:', error);
-                  alert('Erro ao exportar dados: ' + error.message);
+                  alert('Erro ao exportar dados: ' + (error?.message || error));
             } finally {
                   setExporting(false);
             }
