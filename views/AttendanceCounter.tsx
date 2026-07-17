@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { api } from '../lib/apiClient';
 import { validateAttendanceCount } from '../lib/validation';
 import type { Attendance } from '../types';
 
@@ -32,54 +32,34 @@ const AttendanceCounter: React.FC = () => {
 
   const total = presencial + zoom;
 
-  // Fetch today's attendance records on mount
-  useEffect(() => {
-    const fetchHistory = async () => {
-      setLoading(true);
-
+  const fetchHistory = async () => {
+    try {
       const today = new Date();
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
       const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
 
-      const { data, error } = await supabase
-        .from('attendance')
-        .select('id, presencial, zoom, created_at, meeting_id')
-        .gte('created_at', startOfDay)
-        .lt('created_at', endOfDay)
-        .order('created_at', { ascending: false });
+      const data: any[] =
+        (await api.get(`/api/v1/attendance?start=${startOfDay}&end=${endOfDay}`)) || [];
 
-      if (error) {
-        // Fallback for old schema
-        const { data: oldData } = await supabase
-          .from('attendance')
-          .select('id, count, created_at, meeting_id')
-          .gte('created_at', startOfDay)
-          .lt('created_at', endOfDay)
-          .order('created_at', { ascending: false });
-
-        if (oldData && oldData.length > 0) {
-          const converted = oldData.map((r: any) => ({
-            ...r,
-            presencial: r.count || 0,
-            zoom: 0
-          }));
-          setHistory(converted);
-          setSavedPresencial(converted[0].presencial);
-          setSavedZoom(0);
-          setLastSavedAt(converted[0].created_at);
-        }
-      } else if (data) {
-        setHistory(data);
-        if (data.length > 0) {
-          setSavedPresencial(data[0].presencial || 0);
-          setSavedZoom(data[0].zoom || 0);
-          setLastSavedAt(data[0].created_at);
-        }
+      setHistory(data as AttendanceRecord[]);
+      if (data.length > 0) {
+        setSavedPresencial(data[0].presencial || 0);
+        setSavedZoom(data[0].zoom || 0);
+        setLastSavedAt(data[0].created_at);
       }
+    } catch (err) {
+      console.error('Erro ao carregar assistencia do dia:', err);
+    }
+  };
+
+  // Fetch today's attendance records on mount
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      await fetchHistory();
       setLoading(false);
     };
-
-    fetchHistory();
+    load();
   }, []);
 
   // Persist presencial to localStorage
@@ -100,43 +80,26 @@ const AttendanceCounter: React.FC = () => {
     if (zoomError) { alert(zoomError); return; }
     setSaving(true);
 
-    const activeMeetingId = localStorage.getItem('active_meeting_id');
-    const activeTimer = localStorage.getItem('timer_start_timestamp');
+    try {
+      const activeMeetingId = localStorage.getItem('active_meeting_id');
 
-    const { data, error } = await supabase
-      .from('attendance')
-      .insert({
-        meeting_id: activeMeetingId || null,
-        presencial,
-        zoom,
-        count: presencial + zoom
-      })
-      .select('id, presencial, zoom, count, created_at')
-      .single();
-
-    if (error) {
-      // Fallback
-      const { data: oldData } = await supabase
-        .from('attendance')
-        .insert({ meeting_id: activeMeetingId || null, count: total })
-        .select('id, count, created_at')
-        .single();
-
-      if (oldData) {
-        setHistory([{ ...oldData, presencial: total, zoom: 0 } as any, ...history]);
-        setLastSavedAt(oldData.created_at);
-        setSavedPresencial(presencial);
-        setSavedZoom(zoom);
-        setSavedSuccess(true);
+      if (activeMeetingId) {
+        // Assistencia da reuniao ativa (1 por reuniao, upsert no backend)
+        await api.put(`/api/v1/meetings/${activeMeetingId}/attendance`, { presencial, zoom });
       } else {
-        alert('Erro ao salvar.');
+        // Assistencia avulsa (sem reuniao)
+        await api.post('/api/v1/attendance', { presencial, zoom });
       }
-    } else if (data) {
-      setHistory([data as AttendanceRecord, ...history]);
-      setLastSavedAt(data.created_at);
-      setSavedPresencial(data.presencial);
-      setSavedZoom(data.zoom);
+
+      // Recarrega o dia (traz created_at do banco e evita duplicar o upsert da reuniao)
+      await fetchHistory();
+      setSavedPresencial(presencial);
+      setSavedZoom(zoom);
+      setLastSavedAt(new Date().toISOString());
       setSavedSuccess(true);
+    } catch (err) {
+      console.error('Erro ao salvar assistencia:', err);
+      alert('Erro ao salvar.');
     }
 
     setTimeout(() => {
