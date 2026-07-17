@@ -13,7 +13,7 @@ public class Attendance {
     private UUID id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "meeting_id", nullable = false)
+    @JoinColumn(name = "meeting_id", nullable = true)
     private Meeting meeting;
 
     private Integer count = 0;

@@ -72,4 +72,17 @@ public class DtoMapper {
             att.getZoom()
         );
     }
+
+    public static AttendanceLogResponse toAttendanceLogResponse(com.meetingmanager.api.domain.Attendance att) {
+        if (att == null) return null;
+        java.util.UUID meetingId = att.getMeeting() != null ? att.getMeeting().getId() : null;
+        return new com.meetingmanager.api.dto.AttendanceLogResponse(
+            att.getId(),
+            meetingId,
+            att.getPresencial(),
+            att.getZoom(),
+            att.getCount(),
+            att.getCreatedAt()
+        );
+    }
 }
