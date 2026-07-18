@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/apiClient';
+import { safeRequest } from '../lib/offlineSync';
 import { validateAttendanceCount } from '../lib/validation';
 import type { Attendance } from '../types';
 
@@ -83,16 +84,14 @@ const AttendanceCounter: React.FC = () => {
     try {
       const activeMeetingId = localStorage.getItem('active_meeting_id');
 
-      if (activeMeetingId) {
-        // Assistencia da reuniao ativa (1 por reuniao, upsert no backend)
-        await api.put(`/api/v1/meetings/${activeMeetingId}/attendance`, { presencial, zoom });
-      } else {
-        // Assistencia avulsa (sem reuniao)
-        await api.post('/api/v1/attendance', { presencial, zoom });
-      }
+      const result = activeMeetingId
+        ? await safeRequest('PUT', `/api/v1/meetings/${activeMeetingId}/attendance`, { presencial, zoom })
+        : await safeRequest('POST', '/api/v1/attendance', { presencial, zoom });
 
-      // Recarrega o dia (traz created_at do banco e evita duplicar o upsert da reuniao)
-      await fetchHistory();
+      if (!result.queued) {
+        // Online: recarrega o dia (created_at do banco, upsert sem duplicar)
+        await fetchHistory();
+      }
       setSavedPresencial(presencial);
       setSavedZoom(zoom);
       setLastSavedAt(new Date().toISOString());
