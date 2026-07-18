@@ -16,6 +16,15 @@ export default defineConfig(({ mode }) => {
         }
       }
     },
+    preview: {
+      port: 4173,
+      proxy: {
+        '/api': {
+          target: 'http://localhost:8080',
+          changeOrigin: true
+        }
+      }
+    },
     plugins: [
       react(),
       VitePWA({
@@ -43,15 +52,9 @@ export default defineConfig(({ mode }) => {
           globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
           runtimeCaching: [
             {
+              // Respostas autenticadas da API nunca podem ser cacheadas
               urlPattern: ({ url }) => url.pathname.startsWith('/api'),
-              handler: 'NetworkFirst',
-              options: {
-                cacheName: 'api-cache',
-                expiration: {
-                  maxEntries: 50,
-                  maxAgeSeconds: 60 * 60 * 24 // 1 day
-                }
-              }
+              handler: 'NetworkOnly'
             }
           ]
         }
