@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { supabase } from './supabaseClient';
+import { api } from './apiClient';
 import { getCurrentLanguage } from './translations';
 
 interface MonthlyMeetingData {
@@ -42,37 +42,33 @@ interface MonthlyReportData {
  * Fetch data for a specific month
  */
 export const fetchMonthlyData = async (year: number, month: number): Promise<MonthlyReportData> => {
-      const startDate = new Date(year, month - 1, 1).toISOString();
-      const endDate = new Date(year, month, 0, 23, 59, 59).toISOString();
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 1); // exclusivo: 1o dia do mes seguinte
+      const startMs = startDate.getTime();
+      const endMs = endDate.getTime();
 
-      // Fetch meetings
-      const { data: meetings } = await supabase
-            .from('meetings')
-            .select(`
-      id,
-      created_at,
-      total_duration_seconds,
-      president,
-      week:weeks (
-        date_range,
-        label
-      )
-    `)
-            .gte('created_at', startDate)
-            .lte('created_at', endDate)
-            .eq('is_active', false)
-            .order('created_at', { ascending: true });
+      // Reunioes finalizadas do mes (started_at dentro do intervalo)
+      const history: any[] = (await api.get('/api/v1/reports/history')) || [];
+      const meetingsData: MonthlyMeetingData[] = history
+            .filter(m => {
+                  if (!m.started_at) return false;
+                  const t = new Date(m.started_at).getTime();
+                  return t >= startMs && t < endMs;
+            })
+            .sort((a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime())
+            .map(m => ({
+                  id: m.id,
+                  created_at: m.started_at,
+                  total_duration_seconds: m.total_duration_seconds || 0,
+                  president: m.president
+            }));
 
-      // Fetch attendance
-      const { data: attendance } = await supabase
-            .from('attendance')
-            .select('id, created_at, presencial, zoom, count')
-            .gte('created_at', startDate)
-            .lte('created_at', endDate)
-            .order('created_at', { ascending: true });
-
-      const meetingsData = (meetings || []) as MonthlyMeetingData[];
-      const attendanceData = (attendance || []) as MonthlyAttendanceData[];
+      // Assistencia do mes (avulsas + de reunioes), em ordem crescente
+      const attendanceRaw: any[] =
+            (await api.get(`/api/v1/attendance?start=${startDate.toISOString()}&end=${endDate.toISOString()}`)) || [];
+      const attendanceData: MonthlyAttendanceData[] = ([...attendanceRaw] as MonthlyAttendanceData[]).sort(
+            (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
 
       // Calculate stats
       const totals = attendanceData.map(a => (a.count || 0) || (a.presencial || 0) + (a.zoom || 0));
@@ -224,11 +220,10 @@ export const generateMonthlyReportPDF = async (year: number, month: number): Pro
  * Get available months with data
  */
 export const getAvailableMonths = async (): Promise<{ year: number; month: number; label: string }[]> => {
-      const { data: meetings } = await supabase
-            .from('meetings')
-            .select('created_at')
-            .eq('is_active', false)
-            .order('created_at', { ascending: false });
+      const history: any[] = (await api.get('/api/v1/reports/history')) || [];
+      const meetings = history
+            .filter(m => m.started_at)
+            .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
 
       const months = new Set<string>();
       const result: { year: number; month: number; label: string }[] = [];
@@ -238,8 +233,8 @@ export const getAvailableMonths = async (): Promise<{ year: number; month: numbe
             ? ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
             : ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
-      (meetings || []).forEach(m => {
-            const date = new Date(m.created_at);
+      meetings.forEach(m => {
+            const date = new Date(m.started_at);
             const key = `${date.getFullYear()}-${date.getMonth() + 1}`;
             if (!months.has(key)) {
                   months.add(key);
