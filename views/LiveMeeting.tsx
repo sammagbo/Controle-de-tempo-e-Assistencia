@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { api } from '../lib/apiClient';
 import { MEETING_SECTIONS, SECTION_COLORS } from '../lib/meetingTemplate';
 import { useMainTimer } from '../lib/hooks/useMainTimer';
 import { useCounselTimer } from '../lib/hooks/useCounselTimer';
@@ -14,11 +14,19 @@ const pad = (n: number) => n.toString().padStart(2, '0');
 // ─── DB helpers ──────────────────────────────────────────────────────────────
 
 async function saveActualSeconds(itemId: string, seconds: number) {
-  await supabase.from('agenda_items').update({ actual_seconds: seconds }).eq('id', itemId);
+  try {
+    await api.put(`/api/v1/agenda-items/${itemId}`, { actual_seconds: seconds });
+  } catch (err) {
+    console.error('Erro ao salvar tempo da parte:', err);
+  }
 }
 
 async function updateItemStatus(itemId: string, status: string) {
-  await supabase.from('agenda_items').update({ status }).eq('id', itemId);
+  try {
+    await api.put(`/api/v1/agenda-items/${itemId}`, { status });
+  } catch (err) {
+    console.error('Erro ao atualizar status da parte:', err);
+  }
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -50,16 +58,23 @@ const LiveMeeting: React.FC = () => {
 
     (async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('agenda_items')
-        .select('id, title, estimated_minutes, position, status, actual_seconds, section, allows_comments, requires_post_comment, skip_timing')
-        .eq('meeting_id', storedMeetingId)
-        .order('position', { ascending: true });
-
-      if (!error && data?.length) {
-        setItems(data);
-        const activeIdx = data.findIndex(i => i.status === 'active');
-        if (activeIdx >= 0) setActiveIndex(activeIdx);
+      try {
+        const meeting = await api.get('/api/v1/meetings/active');
+        const data: LiveAgendaItem[] = [...(meeting?.agenda_items || [])].sort(
+          (a: any, b: any) => (a.position || 0) - (b.position || 0)
+        );
+        if (data.length) {
+          setItems(data);
+          const activeIdx = data.findIndex(i => i.status === 'active');
+          if (activeIdx >= 0) setActiveIndex(activeIdx);
+        }
+        if (meeting?.id && meeting.id !== storedMeetingId) {
+          // O servidor e a fonte da verdade sobre qual reuniao esta ativa
+          setMeetingId(meeting.id);
+          localStorage.setItem('active_meeting_id', meeting.id);
+        }
+      } catch (err) {
+        console.error('Erro ao carregar reuniao ativa:', err);
       }
       setLoading(false);
     })();
@@ -108,12 +123,16 @@ const LiveMeeting: React.FC = () => {
     // ── Exiting counsel mode ──
     if (counsel.isCounselMode) {
       if (meetingId && counsel.counselItemId) {
-        await supabase.from('comments').insert({
-          meeting_id: meetingId,
-          agenda_item_id: counsel.counselItemId,
-          duration_seconds: counsel.counselTimerRef.current,
-          comment_type: 'post_student',
-        });
+        try {
+          await api.post('/api/v1/comments', {
+            meeting_id: meetingId,
+            agenda_item_id: counsel.counselItemId,
+            duration_seconds: counsel.counselTimerRef.current,
+            comment_type: 'post_student',
+          });
+        } catch (err) {
+          console.error('Erro ao salvar conselho:', err);
+        }
       }
       counsel.exitCounsel();
 
@@ -203,22 +222,22 @@ const LiveMeeting: React.FC = () => {
         await updateItemStatus(items[activeIndex].id, 'completed');
       }
 
-      const { data: agendaData } = await supabase
-        .from('agenda_items').select('actual_seconds').eq('meeting_id', meetingId);
-      const { data: commentsData } = await supabase
-        .from('comments').select('duration_seconds').eq('meeting_id', meetingId);
+      const meeting = await api.get(`/api/v1/reports/meetings/${meetingId}`);
+      const agendaTotal = (meeting?.agenda_items || []).reduce(
+        (s: number, i: any) => s + (i.actual_seconds || 0), 0);
+      const commentsTotal = (meeting?.comments || []).reduce(
+        (s: number, c: any) => s + (c.duration_seconds || 0), 0);
+      const total = agendaTotal + commentsTotal;
 
-      const total =
-        (agendaData?.reduce((s, i) => s + (i.actual_seconds || 0), 0) ?? 0) +
-        (commentsData?.reduce((s, i) => s + (i.duration_seconds || 0), 0) ?? 0);
-
-      const { error } = await supabase.from('meetings').update({
+      await api.put(`/api/v1/meetings/${meetingId}`, {
         finished_at: new Date().toISOString(),
         total_duration_seconds: total,
-      }).eq('id', meetingId);
+      });
 
-      if (error) { alert('Erro ao finalizar reunião.'); return; }
       navigate('/report');
+    } catch (err) {
+      console.error('Erro ao finalizar reuniao:', err);
+      alert('Erro ao finalizar reunião.');
     } finally {
       setFinalizing(false);
     }
@@ -236,9 +255,13 @@ const LiveMeeting: React.FC = () => {
     if (!item) return;
     const validationError = validateAssignedNames(editingNameValue);
     if (validationError) { alert(validationError); return; }
-    const { error: dbError } = await supabase
-      .from('agenda_items').update({ assigned_names: editingNameValue }).eq('id', item.id);
-    if (dbError) { alert('Erro ao salvar nome.'); return; }
+    try {
+      await api.put(`/api/v1/agenda-items/${item.id}`, { assigned_names: editingNameValue });
+    } catch (err) {
+      console.error('Erro ao salvar nome:', err);
+      alert('Erro ao salvar nome.');
+      return;
+    }
     const newItems = [...items];
     newItems[activeIndex].assigned_names = editingNameValue;
     setItems(newItems);
