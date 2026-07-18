@@ -489,7 +489,7 @@ const Dashboard: React.FC = () => {
           <p className="mt-1">
             Developed with <span className="text-red-500">♥</span> by{' '}
             <a
-              href="https://www.linkedin.com/in/sam-magbo-02086555/"
+              href="https://sammagbo.com"
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary hover:underline font-medium"
