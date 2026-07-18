@@ -13,7 +13,7 @@ const QUEUE_KEY = 'offline_sync_queue';
 const MAX_ATTEMPTS = 5;
 
 /**
- * Le a fila do localStorage. Entradas do formato antigo (Supabase: type/table/data)
+ * Le a fila do localStorage. Entradas do formato antigo da fila (type/table/data)
  * sao descartadas silenciosamente.
  */
 export const getQueue = (): QueuedRequest[] => {

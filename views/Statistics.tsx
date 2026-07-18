@@ -36,7 +36,7 @@ const Statistics: React.FC = () => {
       const fetchStats = async () => {
             setLoading(true);
             try {
-                  // Busca as reuniões finalizadas no backend próprio (substitui o Supabase)
+                  // Busca as reuniões finalizadas no backend próprio
                   const data = await api.get('/api/v1/reports/history');
                   const meetings: HistoryMeeting[] = data || [];
 

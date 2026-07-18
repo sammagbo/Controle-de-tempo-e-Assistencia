@@ -1,13 +1,13 @@
 # API Contracts (MeetingManager)
 
-Este documento define o contrato da API REST que será exposta pelo backend Spring Boot. Estes contratos foram desenhados com base no modelo de dados do frontend e operações que antes eram executadas via Supabase.
+Este documento define o contrato da API REST que será exposta pelo backend Spring Boot. Estes contratos foram desenhados com base no modelo de dados do frontend e operações que antes eram executadas no backend anterior.
 
 ## 1. Convenções Globais
 
 - **URL Base:** `/api/v1`
 - **Formatos:** `application/json`
 - **Autenticação:** Baseada em sessão (Session Cookie / JWT em HttpOnly Cookie). O cliente deve incluir credenciais nas requisições (ex: `credentials: 'include'` no fetch/axios).
-- **Nomenclatura:** Todos os atributos JSON utilizam **snake_case**, garantindo compatibilidade retroativa com as interfaces TypeScript preexistentes que consumiam dados do Supabase.
+- **Nomenclatura:** Todos os atributos JSON utilizam **snake_case**, garantindo compatibilidade retroativa com as interfaces TypeScript preexistentes do frontend.
 
 ## 2. Tratamento de Erros
 

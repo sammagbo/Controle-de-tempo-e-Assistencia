@@ -52,7 +52,7 @@ const CommentTracker: React.FC = () => {
     const returnToNext = localStorage.getItem('return_to_next') === 'true';
 
     try {
-      // Envia o comentário ao backend próprio (substitui o Supabase)
+      // Envia o comentário ao backend próprio
       await api.post('/api/v1/comments', {
         meeting_id: meetingId,
         agenda_item_id: agendaItemId || null,
