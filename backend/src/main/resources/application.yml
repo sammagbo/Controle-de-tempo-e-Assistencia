@@ -18,6 +18,10 @@ spring:
     locations: classpath:db/migration
   jackson:
     property-naming-strategy: SNAKE_CASE
+  session:
+    timeout: 30d
+    jdbc:
+      initialize-schema: never
 
 server:
   port: 8080
