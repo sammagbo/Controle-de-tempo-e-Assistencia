@@ -25,7 +25,7 @@ async function request(url: string, options: RequestInit) {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     },
-    // Isto é fundamental para enviar e receber o Cookie JSESSIONID do Spring
+    // Isto é fundamental para enviar e receber o Cookie SESSION do Spring Session
     credentials: 'include',
   };
 
