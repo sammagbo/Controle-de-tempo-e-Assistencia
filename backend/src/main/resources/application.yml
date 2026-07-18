@@ -22,12 +22,13 @@ spring:
     timeout: 30d
     jdbc:
       initialize-schema: never
+  web:
+    error:
+      include-message: always
+      include-binding-errors: always
 
 server:
   port: 8080
-  error:
-    include-message: always
-    include-binding-errors: always
 
 app:
   cors:
