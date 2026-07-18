@@ -21,10 +21,32 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const AUTH_CACHE_KEY = 'auth_user';
+
+const readCachedUser = (): User | null => {
+      try {
+            const raw = localStorage.getItem(AUTH_CACHE_KEY);
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            return parsed && parsed.email ? { id: parsed.email, email: parsed.email } : null;
+      } catch {
+            return null;
+      }
+};
+
+const writeCachedUser = (u: User | null): void => {
+      if (u) {
+            localStorage.setItem(AUTH_CACHE_KEY, JSON.stringify(u));
+      } else {
+            localStorage.removeItem(AUTH_CACHE_KEY);
+      }
+};
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-      const [user, setUser] = useState<User | null>(null);
-      const [session, setSession] = useState<Session | null>(null);
-      const [loading, setLoading] = useState(true);
+      const cached = readCachedUser();
+      const [user, setUser] = useState<User | null>(cached);
+      const [session, setSession] = useState<Session | null>(cached ? { user: cached } : null);
+      const [loading, setLoading] = useState(!cached);
 
       useEffect(() => {
             // Check active session against our Spring Boot backend
@@ -35,13 +57,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                               const currentUser = { id: data.email, email: data.email };
                               setUser(currentUser);
                               setSession({ user: currentUser });
+                              writeCachedUser(currentUser);
                         } else {
                               setUser(null);
                               setSession(null);
+                              writeCachedUser(null);
                         }
                   } catch (error) {
-                        setUser(null);
-                        setSession(null);
+                        if (error instanceof TypeError) {
+                              // Sem rede: mantem o estado local — a sessao pode continuar valida no servidor
+                              console.warn('Sem conexão ao validar a sessão; mantendo estado local.');
+                        } else {
+                              // Resposta HTTP (ex.: 401): sessao invalida de verdade
+                              setUser(null);
+                              setSession(null);
+                              writeCachedUser(null);
+                        }
                   } finally {
                         setLoading(false);
                   }
@@ -59,6 +90,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         const currentUser = { id: data.email, email: data.email };
                         setUser(currentUser);
                         setSession({ user: currentUser });
+                        writeCachedUser(currentUser);
                   }
                   return { error: null };
             } catch (error: any) {
@@ -80,6 +112,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             } finally {
                   setUser(null);
                   setSession(null);
+                  writeCachedUser(null);
             }
       };
 
