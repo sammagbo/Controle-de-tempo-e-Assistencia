@@ -528,7 +528,492 @@ export const OFFICIAL_SCHEDULE: ScheduleWeek[] = [
                   { section: "living", title: "Parte de Vida Cristã", duration: 15, type: "talk", hasCounsel: false },
                   { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
             ]
-      }
+      },
+
+      // ============================================
+      // JULHO-AGOSTO 2026 (mwb_T_202607)
+      // ============================================
+      {
+            id: "2026-07-06",
+            startDate: "2026-07-06",
+            endDate: "2026-07-12",
+            dateRange: "6-12 de Julho",
+            bibleReading: "Jeremias 13-15",
+            parts: [
+                  { section: "treasures", title: "Discurso: Jeová merece nossa obediência", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Jer. 13:1-14)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 3, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Cultivando o Interesse", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Discurso", duration: 5, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 49", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "“Obedecer é melhor do que um sacrifício”", duration: 15, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
+      {
+            id: "2026-07-13",
+            startDate: "2026-07-13",
+            endDate: "2026-07-19",
+            dateRange: "13-19 de Julho",
+            bibleReading: "Jeremias 16-17",
+            parts: [
+                  { section: "treasures", title: "Discurso: Faz diferença em quem confiamos!", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Jer. 17:5-18)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 3, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Cultivando o Interesse", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Fazendo Discípulos", duration: 5, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 54", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "Jovens, confiem nos conselhos da Bíblia", duration: 15, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
+      {
+            id: "2026-07-20",
+            startDate: "2026-07-20",
+            endDate: "2026-07-26",
+            dateRange: "20-26 de Julho",
+            bibleReading: "Jeremias 18-19",
+            parts: [
+                  { section: "treasures", title: "Discurso: É possível se recuperar espiritualmente", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Jer. 19:1-11)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Cultivando o Interesse", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Explicando suas Crenças", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 38", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "Como se recuperar espiritualmente", duration: 15, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
+      {
+            id: "2026-07-27",
+            startDate: "2026-07-27",
+            endDate: "2026-08-02",
+            dateRange: "27 Jul - 2 Ago",
+            bibleReading: "Jeremias 20-21",
+            parts: [
+                  { section: "treasures", title: "Discurso: Ele pregou com coragem", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Jer. 20:7-18)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Cultivando o Interesse", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Explicando suas Crenças", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 57", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "Seja adaptável — mostre interesse pessoal", duration: 15, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
+      {
+            id: "2026-08-03",
+            startDate: "2026-08-03",
+            endDate: "2026-08-09",
+            dateRange: "3-9 de Agosto",
+            bibleReading: "Jeremias 22-23",
+            parts: [
+                  { section: "treasures", title: "Discurso: A importância de ter bons pastores", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Jer. 23:25-36)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Cultivando o Interesse", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Discurso", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 103", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "Uma História Escrita por Jeová — O Corpo Governante Unido com os Irmãos — Parte 1", duration: 15, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
+      {
+            id: "2026-08-10",
+            startDate: "2026-08-10",
+            endDate: "2026-08-16",
+            dateRange: "10-16 de Agosto",
+            bibleReading: "Jeremias 24-25",
+            parts: [
+                  { section: "treasures", title: "Discurso: Por que alguns “figos” eram bons e outros eram ruins?", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Jer. 24:1-10)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Cultivando o Interesse", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Fazendo Discípulos", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 65", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "Necessidades Locais", duration: 15, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
+      {
+            id: "2026-08-17",
+            startDate: "2026-08-17",
+            endDate: "2026-08-23",
+            dateRange: "17-23 de Agosto",
+            bibleReading: "Jeremias 26-28",
+            parts: [
+                  { section: "treasures", title: "Discurso: Não seja enganado por falsos profetas", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Jer. 28:5-17)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 3, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Cultivando o Interesse", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Fazendo Discípulos", duration: 5, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 16", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "Necessidades Locais", duration: 15, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
+      {
+            id: "2026-08-24",
+            startDate: "2026-08-24",
+            endDate: "2026-08-30",
+            dateRange: "24-30 de Agosto",
+            bibleReading: "Jeremias 29-30",
+            parts: [
+                  { section: "treasures", title: "Discurso: Jeová disciplina seus servos na medida certa", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Jer. 30:1-11)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 3, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Discurso", duration: 5, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 3", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "Jeová dá esperança a seus servos", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Campanha especial em setembro", duration: 5, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
+      {
+            id: "2026-08-31",
+            startDate: "2026-08-31",
+            endDate: "2026-09-06",
+            dateRange: "31 Ago - 6 Set",
+            bibleReading: "Jeremias 31",
+            parts: [
+                  { section: "treasures", title: "Discurso: “Farei . . . um novo pacto”", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Jer. 31:1-11)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 3, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Explicando suas Crenças", duration: 5, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 67", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "Seja adaptável — Use o JW.ORG", duration: 15, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
+
+      // ============================================
+      // SETEMBRO-OUTUBRO 2026 (mwb_T_202609)
+      // ============================================
+      {
+            id: "2026-09-07",
+            startDate: "2026-09-07",
+            endDate: "2026-09-13",
+            dateRange: "7-13 de Setembro",
+            bibleReading: "Jeremias 32-33",
+            parts: [
+                  { section: "treasures", title: "Discurso: Meditar nas qualidades de Jeová fortalece a nossa fé", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Jer. 32:6-18)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 3, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Cultivando o Interesse", duration: 5, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 128", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "Use seu tempo da melhor forma durante a campanha", duration: 15, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
+      {
+            id: "2026-09-14",
+            startDate: "2026-09-14",
+            endDate: "2026-09-20",
+            dateRange: "14-20 de Setembro",
+            bibleReading: "Jeremias 34-35",
+            parts: [
+                  { section: "treasures", title: "Discurso: Jeová recompensa quem sempre é obediente a ele", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Jer. 35:1-14)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 2, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 2, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Cultivando o Interesse", duration: 3, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Fazendo Discípulos", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 121", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "O autodomínio nos ajuda a obedecer", duration: 6, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Realizações da Organização, setembro", duration: 9, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
+      {
+            id: "2026-09-21",
+            startDate: "2026-09-21",
+            endDate: "2026-09-27",
+            dateRange: "21-27 de Setembro",
+            bibleReading: "Jeremias 36-37",
+            parts: [
+                  { section: "treasures", title: "Discurso: Jeová apoia aqueles que apoiam o Seu Reino", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Jer. 36:1-13)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 3, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Cultivando o Interesse", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "O Que Você Diria?", duration: 6, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 142", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "Continue neutro no seu coração", duration: 15, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
+      {
+            id: "2026-09-28",
+            startDate: "2026-09-28",
+            endDate: "2026-10-04",
+            dateRange: "28 Set - 4 Out",
+            bibleReading: "Jeremias 38-39",
+            parts: [
+                  { section: "treasures", title: "Discurso: Continuem ajudando uns aos outros", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Jer. 38:1-13)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 3, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Cultivando o Interesse", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "O Que Você Diria?", duration: 6, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 90", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "“Quem me Tocou?”", duration: 15, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
+      {
+            id: "2026-10-05",
+            startDate: "2026-10-05",
+            endDate: "2026-10-11",
+            dateRange: "5-11 de Outubro",
+            bibleReading: "Jeremias 40-41",
+            parts: [
+                  { section: "treasures", title: "Discurso: Tenha o ponto de vista correto sobre a proteção de Jeová", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Jer. 40:1-10)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 2, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 2, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Explicando suas Crenças", duration: 3, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 17", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "Jeová é o Protetor das viúvas", duration: 15, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
+      {
+            id: "2026-10-12",
+            startDate: "2026-10-12",
+            endDate: "2026-10-18",
+            dateRange: "12-18 de Outubro",
+            bibleReading: "Jeremias 42-44",
+            parts: [
+                  { section: "treasures", title: "Discurso: Eles perguntaram o que fazer, mas não obedeceram", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Jer. 43:1-13)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 3, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Cultivando o Interesse", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "O Que Você Diria?", duration: 6, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 47", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "Necessidades Locais", duration: 15, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
+      {
+            id: "2026-10-19",
+            startDate: "2026-10-19",
+            endDate: "2026-10-25",
+            dateRange: "19-25 de Outubro",
+            bibleReading: "Jeremias 45-46",
+            parts: [
+                  { section: "treasures", title: "Discurso: Ter esperança é o segredo para o contentamento", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Jer. 46:13-24)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 3, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 2, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 2, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Discurso", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 117", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "‘Partilhe com outros o que você tem’", duration: 15, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
+      {
+            id: "2026-10-26",
+            startDate: "2026-10-26",
+            endDate: "2026-11-01",
+            dateRange: "26 Out - 1 Nov",
+            bibleReading: "Jeremias 47-48",
+            parts: [
+                  { section: "treasures", title: "Discurso: Jeová é um Juiz justo e misericordioso", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Jer. 48:1-13)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 3, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Cultivando o Interesse", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Fazendo Discípulos", duration: 5, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 158", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "Necessidades Locais", duration: 15, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
+
+      // ============================================
+      // NOVEMBRO-DEZEMBRO 2026 (mwb_T_202611)
+      // ============================================
+      {
+            id: "2026-11-02",
+            startDate: "2026-11-02",
+            endDate: "2026-11-08",
+            dateRange: "2-8 de Novembro",
+            bibleReading: "Jeremias 49-50",
+            parts: [
+                  { section: "treasures", title: "Discurso: Ajude outros a se beneficiar da misericórdia de Jeová", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Jer. 50:24-40)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 3, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Cultivando o Interesse", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Fazendo Discípulos", duration: 5, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 44", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "Nunca se Esqueça do Que Jeová se Lembra", duration: 15, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
+      {
+            id: "2026-11-09",
+            startDate: "2026-11-09",
+            endDate: "2026-11-15",
+            dateRange: "9-15 de Novembro",
+            bibleReading: "Jeremias 51-52",
+            parts: [
+                  { section: "treasures", title: "Discurso: Não siga o exemplo de Zedequias", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Jer. 52:6-20)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 3, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Discurso", duration: 5, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 10", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "Nossos donativos dão glória ao belo nome de Jeová", duration: 15, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
+      {
+            id: "2026-11-16",
+            startDate: "2026-11-16",
+            endDate: "2026-11-22",
+            dateRange: "16-22 de Novembro",
+            bibleReading: "Lamentações 1-2",
+            parts: [
+                  { section: "treasures", title: "Discurso: Uma reação compreensível diante de uma terrível perda", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Lam. 1:8-18)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 3, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Cultivando o Interesse", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "O Que Você Diria?", duration: 5, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 90", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "Não se esqueça de nossos irmãos e irmãs inativos", duration: 15, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
+      {
+            id: "2026-11-23",
+            startDate: "2026-11-23",
+            endDate: "2026-11-29",
+            dateRange: "23-29 de Novembro",
+            bibleReading: "Lamentações 3-5",
+            parts: [
+                  { section: "treasures", title: "Discurso: Não desista quando passar por provações", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Lam. 3:19-42)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 3, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Discurso", duration: 5, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 109", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "Ajude os cuidadores a não desanimar", duration: 15, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
+      {
+            id: "2026-11-30",
+            startDate: "2026-11-30",
+            endDate: "2026-12-06",
+            dateRange: "30 Nov - 6 Dez",
+            bibleReading: "Ezequiel 1-2",
+            parts: [
+                  { section: "treasures", title: "Discurso: Acompanhe o passo do carro celestial de Jeová", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Eze. 2:1-10)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 3, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Fazendo Discípulos", duration: 5, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Discurso", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 63", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "Necessidades Locais", duration: 15, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
+      {
+            id: "2026-12-07",
+            startDate: "2026-12-07",
+            endDate: "2026-12-13",
+            dateRange: "7-13 de Dezembro",
+            bibleReading: "Ezequiel 3-4",
+            parts: [
+                  { section: "treasures", title: "Discurso: Por que não temos medo de pregar?", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Eze. 3:16-27)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 3, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Fazendo Discípulos", duration: 5, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 161", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "Necessidades Locais", duration: 15, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
+      {
+            id: "2026-12-14",
+            startDate: "2026-12-14",
+            endDate: "2026-12-20",
+            dateRange: "14-20 de Dezembro",
+            bibleReading: "Ezequiel 5-6",
+            parts: [
+                  { section: "treasures", title: "Discurso: Pessoas que adoram ídolos deixam Jeová muito triste", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Eze. 6:1-10)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 3, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Cultivando o Interesse", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "O Que Você Diria?", duration: 5, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 153", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "Por que não participamos de cerimônias nacionalistas?", duration: 15, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
+      {
+            id: "2026-12-21",
+            startDate: "2026-12-21",
+            endDate: "2026-12-27",
+            dateRange: "21-27 de Dezembro",
+            bibleReading: "Ezequiel 7-8",
+            parts: [
+                  { section: "treasures", title: "Discurso: O dia de Jeová virá na hora certa", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Eze. 8:7-18)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 3, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Cultivando o Interesse", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Fazendo Discípulos", duration: 5, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 139", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "Pense nas consequências", duration: 15, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
+      {
+            id: "2026-12-28",
+            startDate: "2026-12-28",
+            endDate: "2027-01-03",
+            dateRange: "28 Dez - 3 Jan",
+            bibleReading: "Ezequiel 9-10",
+            parts: [
+                  { section: "treasures", title: "Discurso: Ajude outros a sobreviver ao Armagedom", duration: 10, type: "talk", hasCounsel: false },
+                  { section: "treasures", title: "Joias Espirituais", duration: 10, type: "gems", hasCounsel: false },
+                  { section: "treasures", title: "Leitura da Bíblia (Eze. 9:1-11)", duration: 4, type: "bible_reading", hasCounsel: true },
+                  { section: "ministry", title: "Iniciando Conversas", duration: 3, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Cultivando o Interesse", duration: 4, type: "ministry_part", hasCounsel: true },
+                  { section: "ministry", title: "Explicando suas Crenças", duration: 5, type: "ministry_part", hasCounsel: true },
+                  { section: "living", title: "Cântico 60", duration: 3, type: "song", hasCounsel: false },
+                  { section: "living", title: "Salve a si mesmo e a quem escuta você", duration: 15, type: "talk", hasCounsel: false },
+                  { section: "living", title: "Estudo Bíblico de Congregação", duration: 30, type: "cbs", hasCounsel: false }
+            ]
+      },
 ];
 
 /**
