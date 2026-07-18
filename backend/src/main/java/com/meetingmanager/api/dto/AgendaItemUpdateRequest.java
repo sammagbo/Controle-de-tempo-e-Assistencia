@@ -1,6 +1,7 @@
 package com.meetingmanager.api.dto;
+import jakarta.validation.constraints.Min;
 public record AgendaItemUpdateRequest(
-    Integer actualSeconds,
+    @Min(0) Integer actualSeconds,
     String status,
     String assignedNames
 ) {}

@@ -5,6 +5,7 @@ import com.meetingmanager.api.dto.*;
 import com.meetingmanager.api.mapper.DtoMapper;
 import com.meetingmanager.api.service.AttendanceService;
 import com.meetingmanager.api.service.MeetingService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -25,7 +26,7 @@ public class MeetingController {
     }
 
     @PostMapping
-    public ResponseEntity<MeetingResponse> createMeeting(@RequestBody MeetingRequest request, Authentication authentication) {
+    public ResponseEntity<MeetingResponse> createMeeting(@Valid @RequestBody MeetingRequest request, Authentication authentication) {
         Meeting meeting = meetingService.createMeeting(request, authentication.getName());
         return ResponseEntity.status(HttpStatus.CREATED).body(DtoMapper.toMeetingResponse(meeting));
     }
@@ -37,19 +38,19 @@ public class MeetingController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<MeetingResponse> updateMeeting(@PathVariable UUID id, @RequestBody MeetingUpdateRequest request, Authentication authentication) {
+    public ResponseEntity<MeetingResponse> updateMeeting(@PathVariable UUID id, @Valid @RequestBody MeetingUpdateRequest request, Authentication authentication) {
         Meeting meeting = meetingService.updateMeeting(id, request, authentication.getName());
         return ResponseEntity.ok(DtoMapper.toMeetingResponse(meeting));
     }
 
     @PutMapping("/{id}/agenda")
-    public ResponseEntity<Void> setupAgenda(@PathVariable UUID id, @RequestBody MeetingSetupRequest request, Authentication authentication) {
+    public ResponseEntity<Void> setupAgenda(@PathVariable UUID id, @Valid @RequestBody MeetingSetupRequest request, Authentication authentication) {
         meetingService.setupMeeting(id, request, authentication.getName());
         return ResponseEntity.ok().build();
     }
 
     @PutMapping("/{id}/attendance")
-    public ResponseEntity<AttendanceResponse> updateAttendance(@PathVariable UUID id, @RequestBody AttendanceRequest request) {
+    public ResponseEntity<AttendanceResponse> updateAttendance(@PathVariable UUID id, @Valid @RequestBody AttendanceRequest request) {
         return ResponseEntity.ok(DtoMapper.toAttendanceResponse(attendanceService.updateAttendance(id, request)));
     }
 }

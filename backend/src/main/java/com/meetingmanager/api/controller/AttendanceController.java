@@ -3,6 +3,7 @@ package com.meetingmanager.api.controller;
 import com.meetingmanager.api.dto.AttendanceLogResponse;
 import com.meetingmanager.api.dto.AttendanceRequest;
 import com.meetingmanager.api.service.AttendanceService;
+import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +22,7 @@ public class AttendanceController {
     }
 
     @PostMapping
-    public ResponseEntity<AttendanceLogResponse> create(@RequestBody AttendanceRequest request) {
+    public ResponseEntity<AttendanceLogResponse> create(@Valid @RequestBody AttendanceRequest request) {
         return ResponseEntity.ok(attendanceService.createStandalone(request));
     }
 

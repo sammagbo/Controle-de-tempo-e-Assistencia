@@ -4,6 +4,7 @@ import com.meetingmanager.api.dto.CommentRequest;
 import com.meetingmanager.api.dto.CommentResponse;
 import com.meetingmanager.api.mapper.DtoMapper;
 import com.meetingmanager.api.service.CommentService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +20,7 @@ public class CommentController {
     }
 
     @PostMapping
-    public ResponseEntity<CommentResponse> createComment(@RequestBody CommentRequest request) {
+    public ResponseEntity<CommentResponse> createComment(@Valid @RequestBody CommentRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(DtoMapper.toCommentResponse(commentService.createComment(request)));
     }

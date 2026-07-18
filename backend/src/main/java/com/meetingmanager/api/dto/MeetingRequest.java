@@ -1,6 +1,5 @@
 package com.meetingmanager.api.dto;
+import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
-import java.time.OffsetDateTime;
-import java.util.List;
 
-public record MeetingRequest(UUID weekId) {}
+public record MeetingRequest(@NotNull UUID weekId) {}

@@ -1,8 +1,11 @@
 package com.meetingmanager.api.dto;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 public record CommentRequest(
-    UUID meetingId,
+    @NotNull UUID meetingId,
     UUID agendaItemId,
-    Integer durationSeconds,
-    String commentType
+    @Min(0) Integer durationSeconds,
+    @NotBlank String commentType
 ) {}
