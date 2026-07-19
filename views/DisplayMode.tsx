@@ -26,7 +26,11 @@ const DisplayMode: React.FC = () => {
         try {
             const meeting = await api.get('/api/v1/meetings/active');
             const items: any[] = meeting?.agenda_items || [];
-            const active = items.find((i) => i.status === 'active');
+            // Pode haver mais de uma parte 'active' se a anterior nao foi rebaixada
+            // (pausa/pulo). A parte corrente e a ativa de maior position.
+            const active = items
+                  .filter((i) => i.status === 'active')
+                  .sort((a, b) => (b.position || 0) - (a.position || 0))[0];
             if (active) {
                 setCurrentItem(active as AgendaItem);
                 setElapsedSeconds(active.actual_seconds || 0);
