@@ -28,5 +28,32 @@ services:
       postgres:
         condition: service_healthy
 
+  api:
+    build: ./backend
+    container_name: meetingmanager_api
+    profiles: ["full"]
+    environment:
+      DB_HOST: postgres
+      DB_NAME: meeting_db
+      DB_USER: meeting_user
+      DB_PASSWORD: meeting_password
+      CORS_ALLOWED_ORIGINS: http://localhost:8081,http://localhost:3000,http://localhost:5173,http://localhost:4173
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: meetingmanager_web
+    profiles: ["full"]
+    ports:
+      - "8081:80"
+    depends_on:
+      - api
+
 volumes:
   pgdata:
