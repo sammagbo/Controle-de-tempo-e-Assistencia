@@ -1,0 +1,13 @@
+{
+  "name": "meetingmanager-video-capture",
+  "private": true,
+  "type": "module",
+  "description": "Grava os dados fictícios numa instância local da demo e captura as telas reais para o vídeo do portfólio.",
+  "scripts": {
+    "seed": "node seed.mjs",
+    "capture": "node capture.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "1.63.0"
+  }
+}

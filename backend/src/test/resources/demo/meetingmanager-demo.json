@@ -1,0 +1,400 @@
+{
+  "about": "Dados fictícios do vídeo de demonstração (video/capture): uma reunião semanal de equipe genérica, inventada e neutra. Só o seed da instância local da demo (mm-demo-db, porta 5433) lê este arquivo.",
+  "user": {
+    "email": "demo@example.com"
+  },
+  "themes": {
+    "Setembro - Outubro 2026": {
+      "Semana 01": "Planejamento do semestre",
+      "Semana 02": "Metas e prioridades da equipe",
+      "Semana 03": "Comunicação entre as áreas",
+      "Semana 04": "Organização das tarefas",
+      "Semana 05": "Atendimento e acolhimento",
+      "Semana 06": "Revisão dos processos",
+      "Semana 07": "Ferramentas de trabalho em equipe",
+      "Semana 08": "Avaliação do mês"
+    }
+  },
+  "otherThemes": [
+    "Boas práticas no dia a dia",
+    "Integração de novos membros",
+    "Planejamento do mês",
+    "Retrospectiva da equipe",
+    "Projetos em andamento",
+    "Segurança e bem-estar",
+    "Formação interna",
+    "Indicadores e resultados",
+    "Ideias para o próximo ciclo",
+    "Calendário de atividades"
+  ],
+  "meeting": {
+    "title": "Reunião semanal da equipe",
+    "day": "Terça",
+    "start": "19:30",
+    "zone": "America/Sao_Paulo",
+    "attendanceAfterMinutes": 25
+  },
+  "parts": [
+    {
+      "title": "Boas-vindas",
+      "section": "abertura",
+      "minutes": 3
+    },
+    {
+      "title": "Avisos da semana",
+      "section": "abertura",
+      "minutes": 5
+    },
+    {
+      "title": "Apresentação do tema",
+      "section": "abertura",
+      "minutes": 12
+    },
+    {
+      "title": "Trabalho em grupos",
+      "section": "abertura",
+      "minutes": 20
+    },
+    {
+      "title": "Relato dos grupos",
+      "section": "abertura",
+      "minutes": 10
+    },
+    {
+      "title": "Perguntas",
+      "section": "encerramento",
+      "minutes": 5
+    },
+    {
+      "title": "Próximos passos",
+      "section": "encerramento",
+      "minutes": 3
+    },
+    {
+      "title": "Palavras finais",
+      "section": "encerramento",
+      "minutes": 2
+    }
+  ],
+  "thisWeek": {
+    "date": "2026-10-20",
+    "week": "19-25 de Outubro",
+    "president": "Marcos Exemplo",
+    "names": [
+      "Marcos Exemplo",
+      "Ana Demo",
+      "Carla Fictícia",
+      "Bruno Fictício e Lia Exemplo",
+      "Júlia Fictícia e Paulo Demo",
+      "Tiago Exemplo",
+      "Sofia Demo",
+      "Marcos Exemplo"
+    ],
+    "actualSeconds": [
+      168,
+      312,
+      695,
+      1300,
+      702,
+      270,
+      185,
+      110
+    ],
+    "attendance": {
+      "presencial": 53,
+      "zoom": 8
+    }
+  },
+  "history": [
+    {
+      "date": "2026-08-11",
+      "week": "10-16 de Agosto",
+      "president": "Marcos Exemplo",
+      "names": [
+        "Marcos Exemplo",
+        "Ana Demo",
+        "Carla Fictícia",
+        "Bruno Fictício e Lia Exemplo",
+        "Júlia Fictícia",
+        "Tiago Exemplo",
+        "Sofia Demo",
+        "Marcos Exemplo"
+      ],
+      "actualSeconds": [
+        197,
+        275,
+        792,
+        1319,
+        537,
+        311,
+        187,
+        133
+      ],
+      "attendance": {
+        "presencial": 39,
+        "zoom": 13
+      }
+    },
+    {
+      "date": "2026-08-18",
+      "week": "17-23 de Agosto",
+      "president": "Helena Exemplo",
+      "names": [
+        "Helena Exemplo",
+        "Tiago Exemplo",
+        "Sofia Demo",
+        "Diego Demo e Beatriz Fictícia",
+        "Caio Exemplo",
+        "Marina Demo",
+        "Otávio Fictício",
+        "Helena Exemplo"
+      ],
+      "actualSeconds": [
+        165,
+        322,
+        787,
+        1200,
+        624,
+        318,
+        187,
+        109
+      ],
+      "attendance": {
+        "presencial": 41,
+        "zoom": 12
+      }
+    },
+    {
+      "date": "2026-08-25",
+      "week": "24-30 de Agosto",
+      "president": "Paulo Demo",
+      "names": [
+        "Paulo Demo",
+        "Marina Demo",
+        "Otávio Fictício",
+        "Ana Demo e Carla Fictícia",
+        "Bruno Fictício",
+        "Lia Exemplo",
+        "Júlia Fictícia",
+        "Paulo Demo"
+      ],
+      "actualSeconds": [
+        162,
+        275,
+        739,
+        1094,
+        667,
+        300,
+        182,
+        127
+      ],
+      "attendance": {
+        "presencial": 40,
+        "zoom": 14
+      }
+    },
+    {
+      "date": "2026-09-01",
+      "week": "31 Ago - 6 Set",
+      "president": "Renato Fictício",
+      "names": [
+        "Renato Fictício",
+        "Lia Exemplo",
+        "Júlia Fictícia",
+        "Tiago Exemplo e Sofia Demo",
+        "Diego Demo",
+        "Beatriz Fictícia",
+        "Caio Exemplo",
+        "Renato Fictício"
+      ],
+      "actualSeconds": [
+        196,
+        336,
+        727,
+        1073,
+        662,
+        291,
+        191,
+        126
+      ],
+      "attendance": {
+        "presencial": 44,
+        "zoom": 11
+      }
+    },
+    {
+      "date": "2026-09-08",
+      "week": "7-13 de Setembro",
+      "president": "Marcos Exemplo",
+      "names": [
+        "Marcos Exemplo",
+        "Beatriz Fictícia",
+        "Caio Exemplo",
+        "Marina Demo e Otávio Fictício",
+        "Ana Demo",
+        "Carla Fictícia",
+        "Bruno Fictício",
+        "Marcos Exemplo"
+      ],
+      "actualSeconds": [
+        163,
+        265,
+        635,
+        1317,
+        620,
+        272,
+        196,
+        114
+      ],
+      "attendance": {
+        "presencial": 43,
+        "zoom": 12
+      }
+    },
+    {
+      "date": "2026-09-15",
+      "week": "14-20 de Setembro",
+      "president": "Helena Exemplo",
+      "names": [
+        "Helena Exemplo",
+        "Carla Fictícia",
+        "Bruno Fictício",
+        "Lia Exemplo e Júlia Fictícia",
+        "Tiago Exemplo",
+        "Sofia Demo",
+        "Diego Demo",
+        "Helena Exemplo"
+      ],
+      "actualSeconds": [
+        160,
+        305,
+        724,
+        1326,
+        568,
+        266,
+        159,
+        113
+      ],
+      "attendance": {
+        "presencial": 46,
+        "zoom": 10
+      }
+    },
+    {
+      "date": "2026-09-22",
+      "week": "21-27 de Setembro",
+      "president": "Paulo Demo",
+      "names": [
+        "Paulo Demo",
+        "Sofia Demo",
+        "Diego Demo",
+        "Beatriz Fictícia e Caio Exemplo",
+        "Marina Demo",
+        "Otávio Fictício",
+        "Ana Demo",
+        "Paulo Demo"
+      ],
+      "actualSeconds": [
+        178,
+        293,
+        764,
+        1210,
+        538,
+        300,
+        176,
+        113
+      ],
+      "attendance": {
+        "presencial": 48,
+        "zoom": 11
+      }
+    },
+    {
+      "date": "2026-09-29",
+      "week": "28 Set - 4 Out",
+      "president": "Renato Fictício",
+      "names": [
+        "Renato Fictício",
+        "Otávio Fictício",
+        "Ana Demo",
+        "Carla Fictícia e Bruno Fictício",
+        "Lia Exemplo",
+        "Júlia Fictícia",
+        "Tiago Exemplo",
+        "Renato Fictício"
+      ],
+      "actualSeconds": [
+        189,
+        282,
+        688,
+        1192,
+        540,
+        320,
+        187,
+        106
+      ],
+      "attendance": {
+        "presencial": 47,
+        "zoom": 9
+      }
+    },
+    {
+      "date": "2026-10-06",
+      "week": "5-11 de Outubro",
+      "president": "Marcos Exemplo",
+      "names": [
+        "Marcos Exemplo",
+        "Júlia Fictícia",
+        "Tiago Exemplo",
+        "Sofia Demo e Diego Demo",
+        "Beatriz Fictícia",
+        "Caio Exemplo",
+        "Marina Demo",
+        "Marcos Exemplo"
+      ],
+      "actualSeconds": [
+        194,
+        264,
+        702,
+        1178,
+        550,
+        320,
+        200,
+        108
+      ],
+      "attendance": {
+        "presencial": 51,
+        "zoom": 8
+      }
+    },
+    {
+      "date": "2026-10-13",
+      "week": "12-18 de Outubro",
+      "president": "Helena Exemplo",
+      "names": [
+        "Helena Exemplo",
+        "Caio Exemplo",
+        "Marina Demo",
+        "Otávio Fictício e Ana Demo",
+        "Carla Fictícia",
+        "Bruno Fictício",
+        "Lia Exemplo",
+        "Helena Exemplo"
+      ],
+      "actualSeconds": [
+        180,
+        308,
+        641,
+        1106,
+        566,
+        272,
+        195,
+        110
+      ],
+      "attendance": {
+        "presencial": 53,
+        "zoom": 7
+      }
+    }
+  ]
+}
