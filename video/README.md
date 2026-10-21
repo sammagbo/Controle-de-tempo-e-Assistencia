@@ -43,5 +43,31 @@ Com o frontend em outra porta: `MM_WEB_PORT=3001 ./demo-instance.sh up` e
   log. Antes de cada captura, a tela é lida (o texto, os valores e os placeholders à vista) e a rodada para se
   aparecer um termo de `terms.mjs`, o `logo.png`, um ícone que virou palavra, um campo de nome vazio ou uma pessoa
   fora dos dados. O seed confere os mesmos termos nos dados e no banco.
+- **As saídas**: as capturas a 2x, o `manifest.json` (as caixas em px CSS em que o vídeo dá zoom) e o `text.json`
+  (as linhas de texto à vista em cada captura, com que o vídeo confere as bordas), em `video/public/mm/`.
 - **O log** vai para `~/mm-captura.log`, com a hora do relógio da demo em cada linha.
 - As capturas e os vídeos não entram no git (`video/public/mm/`, `video/out/`).
+
+## O vídeo
+
+```bash
+cd video && npm ci
+npx remotion compositions src/index.ts     # MeetingManagerDemo, 1600x1000, 30 fps
+npm run render:demo                        # out/meetingmanager-demo.mp4, .webm e -poster.webp
+```
+
+A composição `MeetingManagerDemo` (`src/MeetingManagerDemo.tsx`) parte do motor do vídeo do MAGBO
+(`PortfolioDay.tsx` no commit `de4ea18` de `sammagbo/Controle-de-Acesso`): a faixa preta de 140 px com a legenda em
+francês à esquerda e o chip da hora à direita, a câmera que dá zoom nas capturas e o loop (o último quadro é o
+primeiro). Ela lê `public/mm/manifest.json` (as caixas de cada captura) e `public/mm/text.json` (as linhas de texto à
+vista), e `dayPlan()` para o render se uma vista sair das regras:
+
+- o texto de que a legenda fala com 30 px ou mais no quadro, os rótulos com 24 px ou mais;
+- cada vista parada 2,5 s ou mais, pans de até 60 px CSS por segundo, transições de 15 a 24 quadros;
+- legendas de até 42 caracteres, sem encostar no chip, e sem nenhum termo da guarda (os de `capture/terms.mjs` e os
+  do francês);
+- as bordas limpas: nenhum texto cortado pelo alto ou pela faixa, nem a menos de 8 px deles, e nenhuma palavra
+  cortada nas laterais (as formas e os ícones podem ser cortados);
+- entre 40 e 60 s, e o último quadro igual ao primeiro.
+
+O pôster é o quadro 665, o meio da tela da sala com o tempo estourado. Os vídeos ficam em `out/`, fora do git.

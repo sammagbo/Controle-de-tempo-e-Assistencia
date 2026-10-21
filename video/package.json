@@ -1,0 +1,21 @@
+{
+  "name": "meetingmanager-video",
+  "version": "1.0.0",
+  "description": "O vídeo de demonstração do MeetingManager para o portfólio, montado a partir das capturas neutras",
+  "private": true,
+  "scripts": {
+    "dev": "remotion studio",
+    "render:demo": "remotion render MeetingManagerDemo out/meetingmanager-demo.mp4 --codec=h264 --crf=22 --pixel-format=yuv420p --x264-preset=veryslow --image-format=png --muted && remotion render MeetingManagerDemo out/meetingmanager-demo.webm --codec=vp9 --crf=36 --image-format=png --muted && remotion still MeetingManagerDemo out/meetingmanager-demo-poster.webp --frame=665 --image-format=webp"
+  },
+  "dependencies": {
+    "@fontsource/funnel-display": "5.3.0",
+    "@remotion/cli": "4.0.330",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "remotion": "4.0.330"
+  },
+  "devDependencies": {
+    "@types/react": "19.0.0",
+    "typescript": "5.5.4"
+  }
+}

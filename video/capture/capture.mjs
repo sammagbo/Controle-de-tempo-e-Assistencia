@@ -14,8 +14,9 @@
 // - Antes de cada captura, a guarda lê a tela (o texto, os valores e os placeholders à vista) e para se aparecer um
 //   termo de terms.mjs, o logo.png, um ícone que virou palavra ou uma pessoa fora dos dados da demo.
 //
-// As capturas (2x) e o manifest.json, com as caixas em px CSS que o vídeo usa, vão para video/public/mm/; o log, com
-// a hora do relógio da demo em cada captura, para ~/mm-captura.log.
+// As capturas (2x), o manifest.json, com as caixas em px CSS que o vídeo usa, e o text.json, com as linhas de texto à
+// vista em cada captura (para o vídeo conferir as bordas), vão para video/public/mm/; o log, com a hora do relógio da
+// demo em cada captura, para ~/mm-captura.log.
 import { appendFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -215,6 +216,69 @@ const near = (page, text, cls) => box(page, ({ text, cls }) => {
       return el;
 }, { text, cls });
 
+/** As linhas de texto à vista, em px CSS da página rolada no topo: o texto de cada nó (cortado pelos `overflow` em
+ *  volta), o valor dos campos (largura medida na fonte deles) e os ícones à parte, que contam como forma. O vídeo
+ *  confere com elas que nenhuma vista corta um texto nas bordas. */
+async function textLines(page) {
+      return page.evaluate(() => {
+            const round = (n) => Math.round(n * 10) / 10;
+            const hidden = (el) => {
+                  for (let a = el; a; a = a.parentElement) {
+                        const s = getComputedStyle(a);
+                        if (s.visibility === 'hidden' || s.display === 'none' || Number(s.opacity) === 0) return true;
+                  }
+                  return false;
+            };
+            const clipOf = (el) => {
+                  const clip = { left: -Infinity, top: -Infinity, right: Infinity, bottom: Infinity };
+                  for (let a = el.parentElement; a && a !== document.documentElement; a = a.parentElement) {
+                        const s = getComputedStyle(a);
+                        if (s.overflowX === 'visible' && s.overflowY === 'visible') continue;
+                        const r = a.getBoundingClientRect();
+                        clip.left = Math.max(clip.left, r.left); clip.top = Math.max(clip.top, r.top);
+                        clip.right = Math.min(clip.right, r.right); clip.bottom = Math.min(clip.bottom, r.bottom);
+                  }
+                  return clip;
+            };
+            const lines = [];
+            const push = (el, r, text, kind) => {
+                  const clip = clipOf(el);
+                  const left = Math.max(r.left, clip.left), top = Math.max(r.top, clip.top);
+                  const right = Math.min(r.right, clip.right), bottom = Math.min(r.bottom, clip.bottom);
+                  if (right - left < 1 || bottom - top < 1) return;
+                  lines.push({ text: text.slice(0, 32), kind, px: parseFloat(getComputedStyle(el).fontSize),
+                        x: round(left + scrollX), y: round(top + scrollY), width: round(right - left), height: round(bottom - top) });
+            };
+            const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+            for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+                  const text = node.textContent.trim();
+                  const el = node.parentElement;
+                  if (!text || !el || el.closest('select, option, script, style') || hidden(el)) continue;
+                  const range = document.createRange();
+                  range.selectNodeContents(node);
+                  for (const r of range.getClientRects()) push(el, r, text, el.closest('.material-symbols-outlined') ? 'icon' : 'text');
+            }
+            const canvas = document.createElement('canvas').getContext('2d');
+            for (const el of document.querySelectorAll('input, select, textarea')) {
+                  if (hidden(el)) continue;
+                  const text = el.tagName === 'SELECT' ? el.options[el.selectedIndex]?.text ?? '' : el.value || el.placeholder || '';
+                  if (!text.trim()) continue;
+                  const s = getComputedStyle(el);
+                  const r = el.getBoundingClientRect();
+                  const inLeft = r.left + parseFloat(s.borderLeftWidth) + parseFloat(s.paddingLeft);
+                  const inRight = r.right - parseFloat(s.borderRightWidth) - parseFloat(s.paddingRight);
+                  canvas.font = s.font;
+                  const width = Math.min(canvas.measureText(text).width, inRight - inLeft);
+                  const x = s.textAlign === 'center' ? (inLeft + inRight - width) / 2 : s.textAlign === 'right' || s.textAlign === 'end' ? inRight - width : inLeft;
+                  const size = parseFloat(s.fontSize) * 1.2;
+                  push(el, DOMRect.fromRect({ x, y: r.top + (r.height - size) / 2, width, height: size }), text, 'field');
+            }
+            return lines;
+      });
+}
+const textFile = new URL('text.json', OUT);
+const texts = {};
+
 /** Confere a tela, grava a captura e as caixas. `fullPage` para as telas que passam da janela. */
 async function shot(page, file, boxes, { fullPage = false } = {}) {
       await ready(page);
@@ -226,6 +290,8 @@ async function shot(page, file, boxes, { fullPage = false } = {}) {
       if (fullPage) entry.page = await page.evaluate(() => ({ width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight }));
       manifest.shots[file] = entry;
       writeFileSync(manifestFile, JSON.stringify(manifest, null, 2) + '\n');
+      texts[file] = await textLines(page);
+      writeFileSync(textFile, JSON.stringify(texts) + '\n');
       log(`${file}.png  guard ok  ${JSON.stringify(entry)}`);
 }
 
