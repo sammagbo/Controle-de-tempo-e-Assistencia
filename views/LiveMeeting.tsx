@@ -426,7 +426,7 @@ const LiveMeeting: React.FC = () => {
                   <span className="text-xl font-bold">Pausar</span>
                 </button>
               </div>
-              <div className="flex gap-3 w-full sm:w-auto">
+              <div className="flex gap-3 w-full sm:w-auto flex-1">
                 <button onClick={() => handleJumpToItem(activeIndex - 1)} disabled={activeIndex === 0 || counsel.isCounselMode}
                   className={`flex flex-1 h-14 sm:h-16 items-center justify-center gap-2 rounded-2xl border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all active:scale-95 ${(activeIndex === 0 || counsel.isCounselMode) ? 'opacity-40 cursor-not-allowed' : ''}`}>
                   <span className="material-symbols-outlined text-[28px]">skip_previous</span>
@@ -434,13 +434,13 @@ const LiveMeeting: React.FC = () => {
                 </button>
                 {activeIndex === items.length - 1 && !counsel.isCounselMode ? (
                   <button onClick={finalizeMeeting} disabled={finalizing}
-                    className="flex flex-1 h-14 sm:h-16 items-center justify-center gap-2 rounded-2xl bg-red-600 hover:bg-red-700 text-white shadow-lg transition-all active:scale-95 disabled:opacity-50">
+                    className="flex flex-1 h-14 sm:h-16 items-center justify-center gap-2 rounded-2xl border-2 border-transparent bg-red-600 hover:bg-red-700 text-white shadow-lg transition-all active:scale-95 disabled:opacity-50">
                     <span className="material-symbols-outlined text-[28px]">stop_circle</span>
                     <span className="text-xl font-bold">{finalizing ? 'Finalizando...' : 'FINALIZAR'}</span>
                   </button>
                 ) : (
                   <button onClick={handleNext}
-                    className="flex flex-1 h-14 sm:h-16 items-center justify-center gap-2 rounded-2xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:opacity-90 transition-all active:scale-95">
+                    className="flex flex-1 h-14 sm:h-16 items-center justify-center gap-2 rounded-2xl border-2 border-transparent bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:opacity-90 transition-all active:scale-95">
                     <span className="text-xl font-bold">Próximo</span>
                     <span className="material-symbols-outlined text-[28px]">skip_next</span>
                   </button>
