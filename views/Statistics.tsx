@@ -10,6 +10,7 @@ interface MeetingStats {
       id: string;
       date: string;
       total_duration_seconds: number;
+      duration_minutes: number; // what the duration chart draws, as its title says
       attendance_total: number;
       attendance_presencial: number;
       attendance_zoom: number;
@@ -57,6 +58,7 @@ const Statistics: React.FC = () => {
                                     ? new Date(m.started_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
                                     : '--',
                               total_duration_seconds: m.total_duration_seconds || 0,
+                              duration_minutes: Math.round((m.total_duration_seconds || 0) / 60),
                               attendance_total: att?.count || 0,
                               attendance_presencial: att?.presencial || 0,
                               attendance_zoom: att?.zoom || 0,
@@ -138,9 +140,9 @@ const Statistics: React.FC = () => {
                                                 <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} domain={['dataMin - 10', 'dataMax + 10']} />
                                                 <Tooltip
                                                       contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }}
-                                                      formatter={(value: number) => [`${Math.floor(value / 60)} min`, 'Duração']}
+                                                      formatter={(value: number) => [`${value} min`, 'Duração']}
                                                 />
-                                                <Line type="monotone" dataKey="total_duration_seconds" stroke="#fbbc04" strokeWidth={3} dot={{ r: 4, fill: '#fbbc04' }} activeDot={{ r: 6 }} />
+                                                <Line type="monotone" dataKey="duration_minutes" stroke="#fbbc04" strokeWidth={3} dot={{ r: 4, fill: '#fbbc04' }} activeDot={{ r: 6 }} />
                                                 {/* Reference Line for 1h45m (6300s)? Optional */}
                                           </LineChart>
                                     </ResponsiveContainer>
